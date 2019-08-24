@@ -29,13 +29,29 @@ import discord4j.core.object.util.PermissionSet;
 import discord4j.core.object.util.Snowflake;
 import net.arnx.jsonic.JSON;
 
+/**
+ * シノビガミシナリオセットアップbot.
+ * @author kgmas
+ *
+ */
 @SuppressWarnings("unchecked")
 public class ShinobigamiScenarioSetupBot {
 
+	/**
+	 * discordクライアントインスタンス.
+	 */
 	private static DiscordClient client;
 
+	/**
+	 * ギルドシナリオ情報.そのうちDBへ.
+	 */
 	private static Map<Snowflake, Map<Object, Object>> guildScenarioInfo;
 
+	/**
+	 * メイン.
+	 * botを起動して待機する.
+	 * @param args
+	 */
 	public static void main(String args[]) {
 
 		System.out.println("Botを起動中...");
@@ -86,6 +102,11 @@ public class ShinobigamiScenarioSetupBot {
 		client.login().block();
 	}
 
+	/**
+	 * シナリオ情報をクリアする. /sgsclear.
+	 * @param message メッセージ.
+	 * @throws Exception
+	 */
 	private static void clear(Message message) throws Exception {
 		Guild guild = message.getGuild().block();
 
@@ -119,6 +140,11 @@ public class ShinobigamiScenarioSetupBot {
 
 	}
 
+	/**
+	 * 秘密を送信する。 /sgssend 秘密名 チャンネル.
+	 * @param message メッセージ
+	 * @throws Exception
+	 */
 	private static void sendSecret(Message message) throws Exception {
 		// TODO /sgssend 秘密名 チャンネル
 		String[] commandArray = message.getContent().get().split(" ");
@@ -180,10 +206,11 @@ public class ShinobigamiScenarioSetupBot {
 		// TODO 感情が結ばれている場合、結ばれている相手にも情報を自動で送る。
 	}
 
-	private static void setEmotion(Message message) {
-		// TODO /sgsemo PC番号 PC番号 >>|<<|==|!=|=!
-	}
-
+	/**
+	 * シナリオ情報をセットアップする。 /sgss シナリオURL.
+	 * @param message メッセージ
+	 * @throws Exception
+	 */
 	private static void setup(Message message) throws Exception {
 		String[] commandArray = message.getContent().get().split(" ");
 		MessageChannel messageChannel = message.getChannel().block();
@@ -268,6 +295,12 @@ public class ShinobigamiScenarioSetupBot {
 
 	}
 
+	/**
+	 * マップから文字を取り出す。なければ空文字.
+	 * @param map シナリオ情報マップ
+	 * @param key キー
+	 * @return 値。null to blank.
+	 */
 	private static String text(Map<String, Object> map, String key) {
 		Object result = map.get(key);
 		if (result == null) {
@@ -276,6 +309,12 @@ public class ShinobigamiScenarioSetupBot {
 		return result.toString();
 	}
 
+	/**
+	 * プライベートチャンネル用の権限を設定する.
+	 * @param role 役割
+	 * @param guild サーバ
+	 * @return 権限情報
+	 */
 	private static Set<PermissionOverwrite> getPrivateChannelPermission(Role role, Guild guild) {
 		Set<PermissionOverwrite> permissionOverwrites = new HashSet<>();
 		PermissionSet viewPs = PermissionSet.of(Permission.VIEW_CHANNEL);
@@ -287,7 +326,11 @@ public class ShinobigamiScenarioSetupBot {
 		return permissionOverwrites;
 	}
 
-
+	/**
+	 * シナリオシート情報を取得する.
+	 * @param sheetUrl シナリオシートURL.
+	 * @return シナリオ秘密Map
+	 */
 	private static Map<Object, Object> getScenarioSheetInfo(String sheetUrl) {
 		// TODO 入力チェック
 		try {
@@ -324,6 +367,11 @@ public class ShinobigamiScenarioSetupBot {
 
 	}
 
+	/**
+	 * HTTP接続情報を取得する.
+	 * @param site シナリオシートURL
+	 * @return 接続情報
+	 */
 	private static HttpURLConnection getConnection(String site) {
 		HttpURLConnection con = null;
 
