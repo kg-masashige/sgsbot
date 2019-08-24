@@ -1,8 +1,5 @@
 package csmp.bot;
 
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -12,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import csmp.utl.CsmpUtil;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -27,7 +25,6 @@ import discord4j.core.object.entity.TextChannel;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.PermissionSet;
 import discord4j.core.object.util.Snowflake;
-import net.arnx.jsonic.JSON;
 
 /**
  * シノビガミシナリオセットアップbot.
@@ -92,7 +89,7 @@ public class ShinobigamiScenarioSetupBot {
 					}
 				} catch (Throwable e) {
 					System.out.println("error command:" + text);
-					message.getChannel().block().createMessage("エラーが発生しました。再度実施してください。");
+					message.getChannel().block().createMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
 					e.printStackTrace();
 				}
 			}
@@ -120,7 +117,7 @@ public class ShinobigamiScenarioSetupBot {
 		List<Role> roleList = guild.getRoles().collectList().block();
 		for (GuildChannel channel : channelList) {
 			for (Map<String, Object> pcInfo : pcList) {
-				String roleName = "PC" + (String)pcInfo.get("name");
+				String roleName = "PC" + CsmpUtil.text(pcInfo, "name");
 				if (roleName.toLowerCase().equals(channel.getName().toLowerCase())) {
 					channel.delete().block();
 				}
@@ -128,7 +125,7 @@ public class ShinobigamiScenarioSetupBot {
 		}
 		for (Role role : roleList) {
 			for (Map<String, Object> pcInfo : pcList) {
-				String roleName = "PC" + (String)pcInfo.get("name");
+				String roleName = "PC" + CsmpUtil.text(pcInfo, "name");
 				if (roleName.equals(role.getName())) {
 					role.delete().block();
 					break;
@@ -164,9 +161,9 @@ public class ShinobigamiScenarioSetupBot {
 		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
 		if (secretName.toUpperCase().startsWith("PC")) {
 			for (Map<String, Object> map : pcList) {
-				String name = "PC" + text(map, "name");
+				String name = "PC" +CsmpUtil.text(map, "name");
 				if (secretName.equals(name)) {
-					textMessage = "■" + name + "の秘密：\r\n" + text(map, "secret");
+					textMessage = "■" + name + "の秘密：\r\n" + CsmpUtil.text(map, "secret");
 					break;
 				}
 			}
@@ -174,9 +171,9 @@ public class ShinobigamiScenarioSetupBot {
 		if (textMessage == null) {
 			List<Map<String, Object>> npcList = (List<Map<String, Object>>)secretMap.get("npc");
 			for (Map<String, Object> map : npcList) {
-				String name = text(map, "name");
+				String name =CsmpUtil.text(map, "name");
 				if (secretName.equals(name)) {
-					textMessage = "■" + name + "の秘密：\r\n" + text(map, "secret");
+					textMessage = "■" + name + "の秘密：\r\n" +CsmpUtil.text(map, "secret");
 					break;
 				}
 			}
@@ -222,12 +219,12 @@ public class ShinobigamiScenarioSetupBot {
 		Category category = ((TextChannel)message.getChannel().block()).getCategory().block();
 
 		if (guildScenarioInfo.containsKey(guild.getId())) {
-			messageChannel.createMessage("このサーバーは別のシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。").block();
+			messageChannel.createMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。").block();
 			return;
 		}
 
 		// シナリオ情報取得
-		Map<Object, Object> secretMap = getScenarioSheetInfo(commandArray[1]);
+		Map<Object, Object> secretMap = CsmpUtil.getScenarioSheetInfo(commandArray[1]);
 		if (secretMap == null) {
 			messageChannel.createMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。").block();
 			return;
@@ -255,7 +252,7 @@ public class ShinobigamiScenarioSetupBot {
 		// PC情報の取得
 		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
 		for (Map<String, Object> pcInfo : pcList) {
-			String roleName = "PC" + (String)pcInfo.get("name");
+			String roleName = "PC" + CsmpUtil.text(pcInfo, "name");
 
 			TextChannel tc = null;
 			if (!map.containsKey(roleName)) {
@@ -282,31 +279,17 @@ public class ShinobigamiScenarioSetupBot {
 				}
 			}
 
-			String textMessage = "■" + roleName + "　推奨：" + text(pcInfo, "recommend") + "\r\n" +
-					"・使命：【" + text(pcInfo, "mission") + "】" + "\r\n" +
+			String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
+					"・使命：【" +CsmpUtil.text(pcInfo, "mission") + "】" + "\r\n" +
 					"・導入：\r\n" +
-					text(pcInfo, "intro") + "\r\n" +
+					CsmpUtil.text(pcInfo, "intro") + "\r\n" +
 					"・秘密：\r\n" +
-					text(pcInfo, "secret");
+					CsmpUtil.text(pcInfo, "secret");
 
 			tc.createMessage(textMessage).block();
 
 		}
 
-	}
-
-	/**
-	 * マップから文字を取り出す。なければ空文字.
-	 * @param map シナリオ情報マップ
-	 * @param key キー
-	 * @return 値。null to blank.
-	 */
-	private static String text(Map<String, Object> map, String key) {
-		Object result = map.get(key);
-		if (result == null) {
-			result = "";
-		}
-		return result.toString();
 	}
 
 	/**
@@ -324,69 +307,6 @@ public class ShinobigamiScenarioSetupBot {
 		permissionOverwrites.add(everyonePO);
 
 		return permissionOverwrites;
-	}
-
-	/**
-	 * シナリオシート情報を取得する.
-	 * @param sheetUrl シナリオシートURL.
-	 * @return シナリオ秘密Map
-	 */
-	private static Map<Object, Object> getScenarioSheetInfo(String sheetUrl) {
-		// TODO 入力チェック
-		try {
-			if (sheetUrl.startsWith("<") && sheetUrl.endsWith(">")) {
-				sheetUrl = sheetUrl.substring(1, sheetUrl.length() - 1);
-			}
-			String dispUrl = sheetUrl.replace("edit.html", "display") + "&ajax=1";
-			HttpURLConnection con = getConnection(dispUrl);
-			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
-			writer.close();
-			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Map<Object, Object> map = JSON.decode(con.getInputStream());
-				con.disconnect();
-				Map<String, Object> baseMap = (Map<String, Object>)map.get("base");
-				if (baseMap != null && "1".equals(baseMap.get("publicview"))) {
-					String openUrl = dispUrl.replace("display", "openSecret");
-					HttpURLConnection secretCon = getConnection(openUrl);
-					OutputStreamWriter secretWriter = new OutputStreamWriter(secretCon.getOutputStream());
-					secretWriter.write("pass=" + text(baseMap, "publicviewpass"));
-					secretWriter.flush();
-					secretWriter.close();
-					Map<Object, Object> secretMap = JSON.decode(secretCon.getInputStream());
-					secretCon.disconnect();
-
-					return secretMap;
-				}
-			}
-		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		}
-
-		return null;
-
-	}
-
-	/**
-	 * HTTP接続情報を取得する.
-	 * @param site シナリオシートURL
-	 * @return 接続情報
-	 */
-	private static HttpURLConnection getConnection(String site) {
-		HttpURLConnection con = null;
-
-		try {
-			URL url = new URL(site);
-			con = (HttpURLConnection)url.openConnection();
-			con.setDoOutput(true);
-			con.setConnectTimeout(100000);
-			con.setReadTimeout(100000);
-			con.setRequestMethod("POST");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return con;
 	}
 
 }
