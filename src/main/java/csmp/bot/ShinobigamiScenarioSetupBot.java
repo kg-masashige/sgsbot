@@ -182,16 +182,7 @@ public class ShinobigamiScenarioSetupBot {
 			message.getChannel().block().createMessage(secretName + "の秘密がシナリオ情報内に見つかりません。").block();
 			return;
 		}
-		TextChannel tc = null;
-		List<GuildChannel> channels = guild.getChannels().collectList().block();
-		for (GuildChannel channel : channels) {
-			if (roleName.toLowerCase().equals(channel.getName().toLowerCase())) {
-				if (channel instanceof TextChannel) {
-					tc = (TextChannel)channel;
-					break;
-				}
-			}
-		}
+		TextChannel tc = getTextChannelByName(guild, roleName);
 		if (tc == null) {
 			message.getChannel().block().createMessage(roleName + "のチャンネルがサーバ内に見つかりません。").block();
 			return;
@@ -268,15 +259,7 @@ public class ShinobigamiScenarioSetupBot {
 				}).block();
 
 			} else {
-				List<GuildChannel> channels = guild.getChannels().collectList().block();
-				for (GuildChannel channel : channels) {
-					if (roleName.toLowerCase().equals(channel.getName().toLowerCase())) {
-						if (channel instanceof TextChannel) {
-							tc = (TextChannel)channel;
-							break;
-						}
-					}
-				}
+				tc = getTextChannelByName(guild, roleName);
 			}
 
 			String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
@@ -290,6 +273,26 @@ public class ShinobigamiScenarioSetupBot {
 
 		}
 
+	}
+
+	/**
+	 * チャンネル名を指定してテキストチャンネルを取得する.
+	 * @param guild サーバ
+	 * @param name 名前
+	 * @return
+	 */
+	private static TextChannel getTextChannelByName(Guild guild, String name) {
+		TextChannel tc = null;
+		List<GuildChannel> channels = guild.getChannels().collectList().block();
+		for (GuildChannel channel : channels) {
+			if (name.toLowerCase().equals(channel.getName().toLowerCase())) {
+				if (channel instanceof TextChannel) {
+					tc = (TextChannel)channel;
+					break;
+				}
+			}
+		}
+		return tc;
 	}
 
 	/**
@@ -308,5 +311,6 @@ public class ShinobigamiScenarioSetupBot {
 
 		return permissionOverwrites;
 	}
+
 
 }
