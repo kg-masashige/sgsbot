@@ -143,7 +143,7 @@ public class ShinobigamiScenarioSetupBot {
 	 * @throws Exception
 	 */
 	private static void sendSecret(Message message) throws Exception {
-		// TODO /sgssend 秘密名 チャンネル
+		// /sgssend 秘密名 チャンネル
 		String[] commandArray = message.getContent().get().split(" ");
 		if (commandArray.length != 3) {
 			message.getChannel().block().createMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。").block();
@@ -190,8 +190,6 @@ public class ShinobigamiScenarioSetupBot {
 
 		tc.createMessage(textMessage).block();
 
-
-		// TODO 感情が結ばれている場合、結ばれている相手にも情報を自動で送る。
 	}
 
 	/**
@@ -262,14 +260,18 @@ public class ShinobigamiScenarioSetupBot {
 				tc = getTextChannelByName(guild, roleName);
 			}
 
-			String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
-					"・使命：【" +CsmpUtil.text(pcInfo, "mission") + "】" + "\r\n" +
-					"・導入：\r\n" +
-					CsmpUtil.text(pcInfo, "intro") + "\r\n" +
-					"・秘密：\r\n" +
-					CsmpUtil.text(pcInfo, "secret");
+			if (tc == null) {
+				messageChannel.createMessage(roleName + "チャンネルが見つかりませんでした。").block();
+			} else {
+				String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
+						"・使命：【" +CsmpUtil.text(pcInfo, "mission") + "】" + "\r\n" +
+						"・導入：\r\n" +
+						CsmpUtil.text(pcInfo, "intro") + "\r\n" +
+						"・秘密：\r\n" +
+						CsmpUtil.text(pcInfo, "secret");
 
-			tc.createMessage(textMessage).block();
+				tc.createMessage(textMessage).block();
+			}
 
 		}
 
@@ -282,17 +284,15 @@ public class ShinobigamiScenarioSetupBot {
 	 * @return
 	 */
 	private static TextChannel getTextChannelByName(Guild guild, String name) {
-		TextChannel tc = null;
 		List<GuildChannel> channels = guild.getChannels().collectList().block();
 		for (GuildChannel channel : channels) {
 			if (name.toLowerCase().equals(channel.getName().toLowerCase())) {
 				if (channel instanceof TextChannel) {
-					tc = (TextChannel)channel;
-					break;
+					return (TextChannel)channel;
 				}
 			}
 		}
-		return tc;
+		return null;
 	}
 
 	/**
