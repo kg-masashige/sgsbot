@@ -233,9 +233,17 @@ public class ShinobigamiScenarioSetupBot {
 			spec.setName(scenarioName + "_" + sdf.format(current));
 		}).block();
 
-		Map<String, Role> map = new HashMap<>();
+		Map<String, Role> roleMap = new HashMap<>();
 		for (Role role : guild.getRoles().collectList().block()) {
-			map.put(role.getName(), role);
+			roleMap.put(role.getName().toLowerCase(), role);
+		}
+
+		Map<String, TextChannel> channelMap = new HashMap<>();
+		List<GuildChannel> channels = guild.getChannels().collectList().block();
+		for (GuildChannel channel : channels) {
+			if (channel instanceof TextChannel) {
+				channelMap.put(channel.getName().toLowerCase(), (TextChannel)channel);
+			}
 		}
 
 		// PC情報の取得
@@ -243,35 +251,34 @@ public class ShinobigamiScenarioSetupBot {
 		for (Map<String, Object> pcInfo : pcList) {
 			String roleName = "PC" + CsmpUtil.text(pcInfo, "name");
 
-			TextChannel tc = null;
-			if (!map.containsKey(roleName)) {
-				Role role = guild.createRole(spec -> {
+			Role role = roleMap.get(roleName.toLowerCase());
+			if (role == null) {
+				role = guild.createRole(spec -> {
 					spec.setName(roleName);
 				}).block();
+				roleMap.put(roleName.toLowerCase(), role);
+			}
+			Set<PermissionOverwrite> permission = getPrivateChannelPermission(role, guild);
+			TextChannel tc = channelMap.get(roleName.toLowerCase());
+			if (tc == null) {
 				tc = message.getGuild().block().createTextChannel(spec ->{
 					spec.setName(roleName);
 					if (category != null) {
 						spec.setParentId(category.getId());
 					}
-					spec.setPermissionOverwrites(getPrivateChannelPermission(role, guild));
+					spec.setPermissionOverwrites(permission);
 				}).block();
-
-			} else {
-				tc = getTextChannelByName(guild, roleName);
+				channelMap.put(roleName.toLowerCase(), tc);
 			}
 
-			if (tc == null) {
-				messageChannel.createMessage(roleName + "チャンネルが見つかりませんでした。").block();
-			} else {
-				String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
-						"・使命：【" +CsmpUtil.text(pcInfo, "mission") + "】" + "\r\n" +
-						"・導入：\r\n" +
-						CsmpUtil.text(pcInfo, "intro") + "\r\n" +
-						"・秘密：\r\n" +
-						CsmpUtil.text(pcInfo, "secret");
+			String textMessage = "■" + roleName + "　推奨：" +CsmpUtil.text(pcInfo, "recommend") + "\r\n" +
+					"・使命：【" +CsmpUtil.text(pcInfo, "mission") + "】" + "\r\n" +
+					"・導入：\r\n" +
+					CsmpUtil.text(pcInfo, "intro") + "\r\n" +
+					"・秘密：\r\n" +
+					CsmpUtil.text(pcInfo, "secret");
 
-				tc.createMessage(textMessage).block();
-			}
+			tc.createMessage(textMessage).block();
 
 		}
 
