@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import csmp.utl.CsmpUtil;
+import csmp.utl.DateUtil;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -22,6 +23,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.TextChannel;
+import discord4j.core.object.entity.Webhook;
 import discord4j.core.object.util.Permission;
 import discord4j.core.object.util.PermissionSet;
 import discord4j.core.object.util.Snowflake;
@@ -73,16 +75,36 @@ public class ShinobigamiScenarioSetupBot {
 					text = message.getContent().get();
 					if (text.startsWith("/sgssend ")) {
 						sendSecret(message);
+
 					} else if (text.startsWith("/sgss") || text.startsWith("/sgsread")) {
 						setup(message);
+
 					} else if (text.equals("/sgsclear")) {
 						clear(message);
-					} else if (text.equals("/sgshelp")) {
-						String helpText = "コマンド一覧：\r\n" +
+
+					} else if (text.startsWith("/scheadd")) {
+						registerSchedule(message);
+
+					} else if (text.startsWith("/schedel")) {
+						deleteSchedule(message);
+
+					} else if (text.startsWith("/scheshow")) {
+						showSchedule(message);
+
+					} else if (text.equals("/sgshelp") || text.equals("/schehelp")) {
+						String helpText = "■コマンド一覧（<>はつけずに実行してね）：\r\n" +
+								"・シナリオセットアップコマンド：\r\n" +
 								"　/sgss <シナリオシートURL>：\r\n　　　シナリオシートの情報を読み込んでチャンネル、権限を設定する。\r\n" +
 								"　/sgsread <シナリオシートURL>：\r\n　　　シナリオシートの情報の読み込みだけ行う。\r\n" +
 								"　/sgsclear：\r\n　　　シナリオシートの情報、チャンネル、権限を削除する。\r\n" +
-								"　/sgssend <秘密名> <PC名>：\r\n　　　PC名のチャンネルに指定された秘密を張り付ける。";
+								"　/sgssend <秘密名> <PC名>：\r\n　　　PC名のチャンネルに指定された秘密を張り付ける。\r\n" +
+								"\r\n" +
+								"・スケジュールコマンド：\r\n" +
+								"　/scheadd <日付> <リマインドメッセージ（オプション）>：\r\n　　　セッション予定日になったらリマインドメッセージを飛ばす。\r\n" +
+								"　　　日付を指定する時はカンマ区切りで複数指定可能。例：/scheadd 9/1,9/2\r\n" +
+								"　/schedel <日付> ：\r\n　　　指定したセッション予定日を削除する。\r\n" +
+								"　　　日付を指定する時はカンマ区切りで複数指定可能。allを指定すれば全て削除。例：/schedel 9/1,9/2\r\n" +
+								"　/scheshow ：\r\n　　　登録済のセッション予定日を表示する。\r\n";
 
 						message.getChannel().block()
 							.createMessage(helpText).block();
@@ -193,6 +215,104 @@ public class ShinobigamiScenarioSetupBot {
 	}
 
 	/**
+	 * セッション予定日表示.
+	 * @param message /scheshow
+	 * @throws Exception
+	 */
+	private static void showSchedule(Message message) throws Exception {
+		Guild guild = message.getGuild().block();
+		Map<String, Object> guildScheduleInfo = CsmpUtil.getGuildScheduleInfo(guild.getId().asString());
+		if (guildScheduleInfo == null) {
+			message.getChannel().block().createMessage("セッション予定の取得に失敗しました。登録されていません。").block();
+			return;
+		}
+
+		// 日付リスト、メッセージ、次回日程
+		List<String> dateList = (List<String>)guildScheduleInfo.get("dateList");
+		String messageText = (String)guildScheduleInfo.get("message");
+		String text = "予定日は：\r\n";
+		for (String date : dateList) {
+			text += date + "\r\n";
+		}
+		if (messageText != null) {
+			text += "\r\nリマインドメッセージ：" + messageText;
+		}
+
+		message.getChannel().block().createMessage(text).block();
+	}
+
+	/**
+	 * セッション予定日削除.
+	 * @param message /schedel <日付>
+	 * @throws Exception
+	 */
+	private static void deleteSchedule(Message message) throws Exception {
+		String[] commandArray = message.getContent().get().split(" ");
+		if (commandArray.length < 2) {
+			message.getChannel().block().createMessage("コマンドは「/schedel <日付（一度に複数指定する場合はカンマ区切り。全て削除ならallを指定。）>」と入力してください。").block();
+			return;
+		}
+
+		String dateArray = commandArray[1];
+		if (!"all".equalsIgnoreCase(dateArray)) {
+			dateArray = DateUtil.toFormatDateArray(commandArray[1]);
+		}
+		Guild guild = message.getGuild().block();
+
+		Map<String, Object> result = CsmpUtil.deleteSchedule(guild.getId().asString(), dateArray);
+		if (result != null) {
+			message.getChannel().block().createMessage(dateArray + "を削除しました。").block();
+		} else {
+			message.getChannel().block().createMessage("予定日の削除に失敗しました。").block();
+		}
+
+	}
+
+	/**
+	 * セッション予定日の追加.
+	 * @param message /scheadd <日付> <リマインドメッセージ>
+	 * @throws Exception
+	 */
+	private static void registerSchedule(Message message) throws Exception {
+		String[] commandArray = message.getContent().get().split(" ");
+		if (commandArray.length < 2) {
+			message.getChannel().block().createMessage("コマンドは「/scheadd <日付（一度に複数指定する場合はカンマ区切り）> <リマインドメッセージ（オプション）>」と入力してください。").block();
+			return;
+		}
+
+		String dateArray = DateUtil.toFormatDateArray(commandArray[1]);
+		String messageText = "";
+		if (commandArray.length > 2) {
+			messageText = commandArray[2];
+		}
+
+		TextChannel tc = (TextChannel)message.getChannel().block();
+		Guild guild = message.getGuild().block();
+		List<Webhook> webhookList = tc.getWebhooks().collectList().block();
+		Webhook webhook;
+		if (webhookList == null || webhookList.isEmpty()) {
+			webhook = tc.createWebhook(spec -> {
+				spec.setName(guild.getName());
+			}).block();
+		} else {
+			webhook = webhookList.get(0);
+		}
+		String webhookUrl = "https://discordapp.com/api/webhooks/"
+				+ webhook.getId().asString() + "/" + webhook.getToken();
+
+
+		Map<String, Object> result = CsmpUtil.registerSchedule(guild.getId().asString(), webhookUrl, dateArray, messageText);
+		if (result != null) {
+			message.getChannel().block().createMessage(dateArray + "を登録しました。").block();
+		} else {
+			message.getChannel().block().createMessage("予定日の登録に失敗しました。").block();
+		}
+
+
+	}
+
+
+	/**
 	 * シナリオ情報をセットアップする。 /sgss シナリオURL.
 	 * @param message メッセージ
 	 * @throws Exception
@@ -228,7 +348,7 @@ public class ShinobigamiScenarioSetupBot {
 		}
 
 		Date current = Calendar.getInstance().getTime();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		SimpleDateFormat sdf = DateUtil.getDateFormat();
 		guild.edit(spec -> {
 			spec.setName(scenarioName + "_" + sdf.format(current));
 		}).block();

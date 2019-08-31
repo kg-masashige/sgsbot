@@ -1,5 +1,6 @@
 package csmp.utl;
 
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.util.Map;
@@ -7,6 +8,14 @@ import java.util.Map;
 import net.arnx.jsonic.JSON;
 
 public class CsmpUtil {
+
+	/**
+	 * キャラクターシートのベースURL取得。
+	 * @return テスト環境だとlocal。
+	 */
+	private static String getBaseURL() {
+		return System.getenv("CHARACTER_SHEETS_URL");
+	}
 
 	/**
 	 * シナリオシート情報を取得する.
@@ -61,6 +70,102 @@ public class CsmpUtil {
 			result = "";
 		}
 		return result.toString();
+	}
+
+	/**
+	 * セッション予定日登録.
+	 * @param guildId ギルドID
+	 * @param webhook webhookURL
+	 * @param dates 登録日付
+	 * @param message リマインドメッセージ
+	 * @return 登録情報
+	 */
+	public static Map<String, Object> registerSchedule(String guildId, String webhook, String dates, String message) {
+
+		try {
+			String registerUrl = getBaseURL() + "sgsbot/registerSchedule";
+
+			HttpURLConnection con = HttpConnectionUtil.getConnection(registerUrl);
+			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
+			writer.write("guildId=" + guildId);
+			writer.write("&webhook=" + webhook);
+			writer.write("&dates=" + dates);
+			writer.write("&message=" + message);
+			writer.flush();
+			writer.close();
+			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				Map<String, Object> map = JSON.decode(con.getInputStream());
+				con.disconnect();
+
+				return map;
+			}
+		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
+		return null;
+
+	}
+
+	/**
+	 * セッション予定日削除.
+	 * @param guildId ギルドID
+	 * @param dates カンマ区切りの日付
+	 * @return 削除情報
+	 */
+	public static Map<String, Object> deleteSchedule(String guildId, String dates) {
+
+		try {
+			String registerUrl = getBaseURL() + "sgsbot/deleteSchedule";
+
+			HttpURLConnection con = HttpConnectionUtil.getConnection(registerUrl);
+			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
+			writer.write("guildId=" + guildId);
+			writer.write("&dates=" + dates);
+			writer.flush();
+			writer.close();
+			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				Map<String, Object> map = JSON.decode(con.getInputStream());
+				con.disconnect();
+
+				return map;
+			}
+		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
+		return null;
+
+	}
+
+	/**
+	 * サーバ情報の取得。セッション予定日.
+	 * @param guildId ギルドID
+	 * @return サーバ情報。現在はセッション予定日情報。
+	 */
+	public static Map<String, Object> getGuildScheduleInfo(String guildId) {
+
+		try {
+			String url = getBaseURL() + "sgsbot/listSchedule";
+
+			HttpURLConnection con = HttpConnectionUtil.getConnection(url);
+			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
+			writer.write("guildId=" + guildId);
+			writer.flush();
+			writer.close();
+			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				Map<String, Object> map = JSON.decode(con.getInputStream());
+				con.disconnect();
+
+				return map;
+			}
+		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
+
+		return null;
+
 	}
 
 }
