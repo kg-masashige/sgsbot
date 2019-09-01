@@ -1,13 +1,18 @@
-package csmp.utl;
+package csmp.service;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.util.HashMap;
 import java.util.Map;
 
+import csmp.utl.HttpConnectionUtil;
+import discord4j.core.object.util.Snowflake;
 import net.arnx.jsonic.JSON;
 
-public class CsmpUtil {
+public class CsmpService {
+
+	private static Map<Snowflake, Map<Object,Object>> guildScenarioInfo = new HashMap<>();
 
 	/**
 	 * キャラクターシートのベースURL取得。
@@ -166,6 +171,10 @@ public class CsmpUtil {
 
 		return null;
 
+	}
+
+	public static Map<Snowflake, Map<Object,Object>> getGuildScenarioInfo() {
+		return guildScenarioInfo;
 	}
 
 }

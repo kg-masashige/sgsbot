@@ -28,7 +28,7 @@
 					<assembleDirectory>target</assembleDirectory>
 					<programs>
 						<program>
-							<mainClass>csmp.bot.ShinobigamiScenarioSetupBot</mainClass>
+							<mainClass>csmp.bot.DiscordSessionSupportBot</mainClass>
 							<name>worker</name>
 						</program>
 					</programs>
