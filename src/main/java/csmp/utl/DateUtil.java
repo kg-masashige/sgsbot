@@ -1,5 +1,6 @@
 package csmp.utl;
 
+import java.text.Normalizer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -16,6 +17,7 @@ public class DateUtil {
 	 */
 	public static String toFormatDateArray(String textArray) {
 		String result = "";
+		textArray = textArray.replaceAll("、", ",");
 		for (String text : textArray.split(",")) {
 			result += toFormatDate(text) + ",";
 		}
@@ -49,12 +51,17 @@ public class DateUtil {
 	 */
 	public static String toFormatDate(String text) {
 		text = text.trim();
-		String[] excludeArray = {"(", " ", "（", "　"};
+		String[] excludeArray = {"(", " ", "（", "　", "日"};
 		for (String exclude : excludeArray) {
 			if (text.contains(exclude)) {
 				text = text.substring(0, text.indexOf(exclude));
 			}
 		}
+		text = text.replace("月", "/");
+		text = text.replace("年", "/");
+		text = text.replaceAll("-", "/");
+		text = Normalizer.normalize(text, Normalizer.Form.NFKC);
+
 		String[] ymdArray = text.split("/");
 		if (ymdArray.length < 2) {
 			return "";
