@@ -19,10 +19,10 @@
 botを参加させたサーバで以下の通り発言してください。
 
 ~~~
-/sgss https://character-sheets.appspot.com/sgScenario/edit.html?key=ahVzfmNoYXJhY3Rlci1zaGVldHMtbXByFwsSDUNoYXJhY3RlckRhdGEY1uz8sgIM```
+/sgss https://character-sheets.appspot.com/sgScenario/edit.html?key=ahVzfmNoYXJhY3Rlci1zaGVldHMtbXByFwsSDUNoYXJhY3RlckRhdGEY1uz8sgIM
 ~~~
 
-すると、PC1～PC4までのチャンネルが作られ、それぞれの導入、使命、秘密がチャンネルに貼られます。
+すると、PC1～PC4までのチャンネルが作られ、それぞれの導入、使命、秘密がチャンネルに貼られます。<br>
 チャンネルはそれぞれのPC番号に沿ったDiscordの役割が割り振られ、役割を持った人とサーバ管理者しか観ることができません。
 
 
@@ -35,9 +35,9 @@ botを参加させたサーバで以下の通り発言してください。
 /scheadd 9/16,9/17
 ~~~
 
-すると、
-ShinobigamiScenarioSetupBOT
-2019/09/16,2019/09/17を登録しました。
+すると、<br>
+ShinobigamiScenarioSetupBOT<br>
+2019/09/16,2019/09/17を登録しました。<br>
 
 と返事があります。
 
@@ -49,9 +49,9 @@ ShinobigamiScenarioSetupBOT
 
 と発言してください。
 
-すると
-予定日は：
-2019/09/16(月)
-2019/09/17(火)
+すると<br>
+予定日は：<br>
+2019/09/16(月)<br>
+2019/09/17(火)<br>
 
 と表示されます。
