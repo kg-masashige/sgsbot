@@ -34,9 +34,9 @@ public class DiscordSessionSupportBot {
 
 		String sgsToken = System.getenv("DISCORD_BOT_TOKEN");
 		List<Class<? extends DiscordCommandBase>> sgsExecList = new ArrayList<>();
+		sgsExecList.add(HelpCommand.class);
 		sgsExecList.addAll(sgsClassList);
 		sgsExecList.addAll(scheduleClassList);
-		sgsExecList.add(HelpCommand.class);
 
 		DiscordBotController sgsBot = new DiscordBotController(sgsExecList, sgsToken);
 		// TODO 複数スレッド化したかったけど、Discord4jが対応してない。

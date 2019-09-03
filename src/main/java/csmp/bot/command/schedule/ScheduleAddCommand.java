@@ -61,8 +61,10 @@ public class ScheduleAddCommand extends DiscordCommandBase {
 		Map<String, Object> result = CsmpService.registerSchedule(guild.getId().asString(), webhookUrl, dateArray, messageText);
 		if (result != null) {
 			tc.createMessage(dateArray + "を登録しました。").block();
+			System.out.println("サーバ：" + guild.getName() + "　登録日：" + dateArray);
 		} else {
 			tc.createMessage("予定日の登録に失敗しました。").block();
+			System.out.println("サーバ：" + guild.getName() + "　登録失敗：" + dateArray);
 		}
 
 	}
