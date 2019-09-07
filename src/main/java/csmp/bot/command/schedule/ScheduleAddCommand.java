@@ -3,7 +3,8 @@ package csmp.bot.command.schedule;
 import java.util.List;
 import java.util.Map;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
@@ -16,7 +17,7 @@ import discord4j.core.object.entity.Webhook;
  * @author kgmas
  *
  */
-public class ScheduleAddCommand extends DiscordCommandBase {
+public class ScheduleAddCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -70,8 +71,16 @@ public class ScheduleAddCommand extends DiscordCommandBase {
 	}
 
 	@Override
-	public void help(DiscordMessageData dmd) {
+	public void warning(DiscordMessageData dmd) {
 		dmd.getChannel().createMessage("コマンドは「/scheadd <日付（一度に複数指定する場合はカンマ区切り）> <リマインドメッセージ（オプション）>」と入力してください。").block();
 	}
+
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData("/scheadd <日付> <リマインドメッセージ（オプション）>",
+				"セッション予定日になったらリマインドメッセージを飛ばす。",
+				"日付を指定する時はカンマ区切りで複数指定可能。例：/scheadd 9/1,9/2");
+	}
+
 
 }

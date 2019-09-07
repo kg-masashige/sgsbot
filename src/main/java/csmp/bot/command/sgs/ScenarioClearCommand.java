@@ -3,7 +3,8 @@ package csmp.bot.command.sgs;
 import java.util.List;
 import java.util.Map;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import discord4j.core.object.entity.Guild;
@@ -15,7 +16,7 @@ import discord4j.core.object.entity.Role;
  * @author kgmas
  *
  */
-public class ScenarioClearCommand extends DiscordCommandBase {
+public class ScenarioClearCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -61,6 +62,16 @@ public class ScenarioClearCommand extends DiscordCommandBase {
 		dmd.getChannel().createMessage("役職とチャンネルを削除しました。").block();
 
 
+	}
+	@Override
+	public void warning(DiscordMessageData dmd) {
+	}
+
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData(
+				"/sgsclear",
+				"シナリオシートの情報、チャンネル、権限を削除する。");
 	}
 
 }

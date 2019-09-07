@@ -2,7 +2,8 @@ package csmp.bot.command.schedule;
 
 import java.util.Map;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
@@ -12,7 +13,7 @@ import csmp.utl.DateUtil;
  * @author kgmas
  *
  */
-public class ScheduleDeleteCommand extends DiscordCommandBase {
+public class ScheduleDeleteCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -46,8 +47,16 @@ public class ScheduleDeleteCommand extends DiscordCommandBase {
 	}
 
 	@Override
-	public void help(DiscordMessageData dmd) {
+	public void warning(DiscordMessageData dmd) {
 		dmd.getChannel().createMessage("コマンドは「/schedel <日付（一度に複数指定する場合はカンマ区切り。全て削除ならallを指定。）>」と入力してください。").block();
 	}
 
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData(
+				"/schedel <日付>",
+				"指定したセッション予定日を削除する。",
+				"日付を指定する時はカンマ区切りで複数指定可能。allを指定すれば全て削除。例：/schedel 9/1,9/2"
+				);
+	}
 }

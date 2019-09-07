@@ -3,7 +3,8 @@ package csmp.bot.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.help.HelpCommand;
 import csmp.bot.model.DiscordMessageData;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
@@ -16,7 +17,7 @@ public class DiscordBotController extends Thread {
 	/**
 	 * コマンドリスト.
 	 */
-	private List<DiscordCommandBase> commandList;
+	private List<IDiscordCommand> commandList;
 
 	/**
 	 * discordクライアントインスタンス.
@@ -34,19 +35,24 @@ public class DiscordBotController extends Thread {
 	 * @param classList コマンド配列
 	 * @param token Discord botトークン
 	 */
-	public DiscordBotController(List<Class<? extends DiscordCommandBase>> classList, String token) {
+	public DiscordBotController(List<Class<? extends IDiscordCommand>> classList, String token) {
 		this.token = token;
 		commandList = new ArrayList<>();
-		for (Class<? extends DiscordCommandBase> clazz : classList) {
-			DiscordCommandBase command;
+		List<IDiscordCommand> commandListForHelp = new ArrayList<>();
+		for (Class<? extends IDiscordCommand> clazz : classList) {
+			IDiscordCommand command;
 			try {
 				command = clazz.newInstance();
 			} catch (InstantiationException | IllegalAccessException e) {
 				e.printStackTrace();
 				continue;
 			}
-			commandList.add(command);
+			commandListForHelp.add(command);
 		}
+		HelpCommand hc = new HelpCommand();
+		hc.setCommandList(commandListForHelp);
+		commandList.add(hc);
+		commandList.addAll(commandListForHelp);
 	}
 
 	/**
@@ -69,12 +75,12 @@ public class DiscordBotController extends Thread {
 
 			DiscordMessageData dmd = new DiscordMessageData(message);
 			try {
-				for(DiscordCommandBase command : commandList) {
+				for(IDiscordCommand command : commandList) {
 					if (command.judgeExecute(dmd)) {
 						if (command.checkInput(dmd)) {
 							command.execute(dmd);
 						} else {
-							command.help(dmd);
+							command.warning(dmd);
 						}
 						break;
 					}

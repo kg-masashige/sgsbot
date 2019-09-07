@@ -22,9 +22,9 @@ botを参加させたサーバで以下の通り発言してください。
 /sgss https://character-sheets.appspot.com/sgScenario/edit.html?key=ahVzfmNoYXJhY3Rlci1zaGVldHMtbXByFwsSDUNoYXJhY3RlckRhdGEY1uz8sgIM
 ~~~
 
-すると、PC1～PC4までのチャンネルが作られ、それぞれの導入、使命、秘密がチャンネルに貼られます。<br>
-チャンネルはそれぞれのPC番号に沿ったDiscordの役割が割り振られ、役割を持った人とサーバ管理者しか観ることができません。
-
+すると、PC1～PC4までのチャンネルが作られ、それぞれの導入、使命、秘密が貼られます。<br>
+チャンネルはそれぞれのPC番号に沿ったDiscordの役割が割り振られるため、役割を持った人とサーバ管理者しか観ることができません。<br>
+サーバ管理者は各プレイヤーにPC番号の役割を割り振ってください。<br>
 
 ### セッション予定管理機能
 セッションの次回予定日を登録し、リマインドすることができます。
@@ -55,3 +55,16 @@ ShinobigamiScenarioSetupBOT<br>
 2019/09/17(火)<br>
 
 と表示されます。
+
+登録した日付の日本時間0時になると<br>
+2019/09/16はセッション予定日です。<br>
+<リマインドメッセージ>
+
+と表示されます。
+
+### 連絡先
+bot作成者への連絡は[Twitter](https://twitter.com/kg_masashige/)でお願いします。
+
+### 支援
+支援は[pixivFANBOX](https://www.pixiv.net/fanbox/creator/7622752)へいただけると助かります。<br>
+[キャラクターシート倉庫](https://character-sheets.appspot.com/)トップからのAmazonギフト券でも受け付けております。

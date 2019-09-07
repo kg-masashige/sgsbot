@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
@@ -26,7 +27,7 @@ import discord4j.core.object.util.Snowflake;
  * @author kgmas
  *
  */
-public class ScenarioSetupCommand extends DiscordCommandBase {
+public class ScenarioSetupCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -127,8 +128,14 @@ public class ScenarioSetupCommand extends DiscordCommandBase {
 	}
 
 	@Override
-	public void help(DiscordMessageData dmd) {
+	public void warning(DiscordMessageData dmd) {
 		dmd.getChannel().createMessage("コマンドは「/sgss <シナリオシートURL>」と入力してください。").block();
 	}
 
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData(
+				"/sgss <シナリオシートURL>",
+				"シナリオシートの情報を読み込んでチャンネル、権限を設定する。");
+	}
 }

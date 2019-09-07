@@ -3,7 +3,8 @@ package csmp.bot.command.sgs;
 import java.util.List;
 import java.util.Map;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DiscordUtil;
@@ -15,7 +16,7 @@ import discord4j.core.object.entity.TextChannel;
  * @author kgmas
  *
  */
-public class ScenarioSendSecretCommand extends DiscordCommandBase {
+public class ScenarioSendSecretCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -79,8 +80,14 @@ public class ScenarioSendSecretCommand extends DiscordCommandBase {
 	}
 
 	@Override
-	public void help(DiscordMessageData dmd) {
+	public void warning(DiscordMessageData dmd) {
 		dmd.getChannel().createMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。").block();
 	}
 
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData(
+				"/sgssend <秘密名> <PC名>",
+				"PC名のチャンネルに指定された秘密を張り付ける。");
+	}
 }

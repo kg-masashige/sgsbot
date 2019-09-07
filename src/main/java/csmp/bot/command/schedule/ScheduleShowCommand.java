@@ -3,7 +3,8 @@ package csmp.bot.command.schedule;
 import java.util.List;
 import java.util.Map;
 
-import csmp.bot.command.DiscordCommandBase;
+import csmp.bot.command.IDiscordCommand;
+import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import discord4j.core.object.entity.Guild;
@@ -13,7 +14,7 @@ import discord4j.core.object.entity.Guild;
  * @author kgmas
  *
  */
-public class ScheduleShowCommand extends DiscordCommandBase {
+public class ScheduleShowCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -50,6 +51,17 @@ public class ScheduleShowCommand extends DiscordCommandBase {
 		}
 
 		dmd.getChannel().createMessage(text).block();
+	}
+
+	@Override
+	public void warning(DiscordMessageData dmd) {
+	}
+
+	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData(
+				"/scheshow",
+				"登録済のセッション予定日を表示する。");
 	}
 
 }
