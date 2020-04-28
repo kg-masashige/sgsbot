@@ -1,6 +1,7 @@
 package csmp.bot.command.schedule;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
@@ -32,23 +33,23 @@ public class ScheduleDeleteCommand implements IDiscordCommand {
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
+	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 
 		String dateArray = dmd.getCommandArray()[1];
 		if (!"all".equalsIgnoreCase(dateArray)) {
 			dateArray = DateUtil.toFormatDateArray(dmd.getCommandArray()[1]);
 		}
-		Map<String, Object> result = CsmpService.deleteSchedule(dmd.getGuild().getId().asString(), dateArray);
+		Map<String, Object> result = CsmpService.deleteSchedule(dmd.getGuild().getIdAsString(), dateArray);
 		if (result != null) {
-			dmd.getChannel().createMessage(dateArray + "を削除しました。").block();
+			dmd.getChannel().sendMessage(dateArray + "を削除しました。");
 		} else {
-			dmd.getChannel().createMessage("予定日の削除に失敗しました。").block();
+			dmd.getChannel().sendMessage("予定日の削除に失敗しました。");
 		}
 	}
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().createMessage("コマンドは「/schedel <日付（一度に複数指定する場合はカンマ区切り。全て削除ならallを指定。）>」と入力してください。").block();
+		dmd.getChannel().sendMessage("コマンドは「/schedel <日付（一度に複数指定する場合はカンマ区切り。全て削除ならallを指定。）>」と入力してください。");
 	}
 
 	@Override

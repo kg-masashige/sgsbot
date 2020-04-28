@@ -3,16 +3,15 @@ package csmp.service;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import csmp.utl.HttpConnectionUtil;
-import discord4j.core.object.util.Snowflake;
 import net.arnx.jsonic.JSON;
 
 public class CsmpService {
 
-	private static Map<Snowflake, Map<Object,Object>> guildScenarioInfo = new HashMap<>();
+	private static Map<Long, Map<Object,Object>> guildScenarioInfo = new ConcurrentHashMap<>();
 
 	/**
 	 * キャラクターシートのベースURL取得。
@@ -34,6 +33,10 @@ public class CsmpService {
 				sheetUrl = sheetUrl.substring(1, sheetUrl.length() - 1);
 			}
 			String dispUrl = sheetUrl.replace("edit.html", "display") + "&ajax=1";
+			if (dispUrl.contains("detail")) {
+				dispUrl = dispUrl.replace("detail", "display");
+			}
+
 			HttpURLConnection con = HttpConnectionUtil.getConnection(dispUrl);
 			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
 			writer.close();
@@ -173,7 +176,7 @@ public class CsmpService {
 
 	}
 
-	public static Map<Snowflake, Map<Object,Object>> getGuildScenarioInfo() {
+	public static Map<Long, Map<Object,Object>> getGuildScenarioInfo() {
 		return guildScenarioInfo;
 	}
 

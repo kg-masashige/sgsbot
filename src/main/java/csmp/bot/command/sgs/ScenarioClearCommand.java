@@ -2,14 +2,16 @@ package csmp.bot.command.sgs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.permission.Role;
+import org.javacord.api.entity.server.Server;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.GuildChannel;
-import discord4j.core.object.entity.Role;
 
 /**
  * シナリオ情報クリアコマンド.
@@ -32,21 +34,21 @@ public class ScenarioClearCommand implements IDiscordCommand {
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
-		Guild guild = dmd.getGuild();
+	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		Server guild = dmd.getGuild();
 		Map<Object, Object> secretMap = CsmpService.getGuildScenarioInfo().remove(guild.getId());
 		if (secretMap == null) {
-			dmd.getChannel().createMessage("シナリオ情報が設定されていません。").block();
+			dmd.getChannel().sendMessage("シナリオ情報が設定されていません。");
 			return;
 		}
 		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
-		List<GuildChannel> channelList = dmd.getGuild().getChannels().collectList().block();
-		List<Role> roleList = guild.getRoles().collectList().block();
-		for (GuildChannel channel : channelList) {
+		List<ServerTextChannel> channelList = dmd.getGuild().getTextChannels();
+		List<Role> roleList = guild.getRoles();
+		for (ServerTextChannel channel : channelList) {
 			for (Map<String, Object> pcInfo : pcList) {
 				String roleName = "PC" + CsmpService.text(pcInfo, "name");
 				if (roleName.toLowerCase().equals(channel.getName().toLowerCase())) {
-					channel.delete().block();
+					channel.delete().get();
 				}
 			}
 		}
@@ -54,12 +56,12 @@ public class ScenarioClearCommand implements IDiscordCommand {
 			for (Map<String, Object> pcInfo : pcList) {
 				String roleName = "PC" + CsmpService.text(pcInfo, "name");
 				if (roleName.equals(role.getName())) {
-					role.delete().block();
+					role.delete();
 					break;
 				}
 			}
 		}
-		dmd.getChannel().createMessage("役職とチャンネルを削除しました。").block();
+		dmd.getChannel().sendMessage("役職とチャンネルを削除しました。");
 
 
 	}

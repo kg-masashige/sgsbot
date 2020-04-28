@@ -2,15 +2,18 @@ package csmp.bot.command.schedule;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.webhook.Webhook;
+import org.javacord.api.entity.webhook.WebhookBuilder;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.TextChannel;
-import discord4j.core.object.entity.Webhook;
 
 /**
  * スケジュール追加コマンド.
@@ -36,7 +39,7 @@ public class ScheduleAddCommand implements IDiscordCommand {
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
+	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 
 		String dateArray = DateUtil.toFormatDateArray(dmd.getCommandArray()[1]);
 		String messageText = "";
@@ -44,27 +47,28 @@ public class ScheduleAddCommand implements IDiscordCommand {
 			messageText = dmd.getCommandArray()[2];
 		}
 
-		TextChannel tc = dmd.getChannel();
-		Guild guild = dmd.getGuild();
-		List<Webhook> webhookList = tc.getWebhooks().collectList().block();
+		ServerTextChannel tc = (ServerTextChannel)dmd.getChannel();
+		Server guild = dmd.getGuild();
+		List<Webhook> webhookList = tc.getWebhooks().get();
 		Webhook webhook;
 		if (webhookList == null || webhookList.isEmpty()) {
-			webhook = tc.createWebhook(spec -> {
-				spec.setName(guild.getName());
-			}).block();
+			webhook = new WebhookBuilder(tc)
+					.setName(guild.getName())
+					.create().get();
 		} else {
 			webhook = webhookList.get(0);
 		}
+
+
 		String webhookUrl = "https://discordapp.com/api/webhooks/"
-				+ webhook.getId().asString() + "/" + webhook.getToken();
+				+ webhook.getIdAsString() + "/" + webhook.getToken();
 
-
-		Map<String, Object> result = CsmpService.registerSchedule(guild.getId().asString(), webhookUrl, dateArray, messageText);
+		Map<String, Object> result = CsmpService.registerSchedule(guild.getIdAsString(), webhookUrl, dateArray, messageText);
 		if (result != null) {
-			tc.createMessage(dateArray + "を登録しました。").block();
+			tc.sendMessage(dateArray + "を登録しました。");
 			System.out.println("サーバ：" + guild.getName() + "　登録日：" + dateArray);
 		} else {
-			tc.createMessage("予定日の登録に失敗しました。").block();
+			tc.sendMessage("予定日の登録に失敗しました。");
 			System.out.println("サーバ：" + guild.getName() + "　登録失敗：" + dateArray);
 		}
 
@@ -72,7 +76,7 @@ public class ScheduleAddCommand implements IDiscordCommand {
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().createMessage("コマンドは「/scheadd <日付（一度に複数指定する場合はカンマ区切り）> <リマインドメッセージ（オプション）>」と入力してください。").block();
+		dmd.getChannel().sendMessage("コマンドは「/scheadd <日付（一度に複数指定する場合はカンマ区切り）> <リマインドメッセージ（オプション）>」と入力してください。");
 	}
 
 	@Override

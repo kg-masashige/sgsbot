@@ -2,14 +2,15 @@ package csmp.bot.command.sgs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.server.Server;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
-import csmp.utl.DiscordUtil;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.TextChannel;
 
 /**
  * シナリオ秘密送付コマンド.
@@ -35,11 +36,11 @@ public class ScenarioSendSecretCommand implements IDiscordCommand {
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
-		Guild guild = dmd.getGuild();
+	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		Server guild = dmd.getGuild();
 		Map<Object, Object> secretMap = CsmpService.getGuildScenarioInfo().get(guild.getId());
 		if (secretMap == null) {
-			dmd.getChannel().createMessage("シナリオ情報が設定されていません。").block();
+			dmd.getChannel().sendMessage("シナリオ情報が設定されていません。");
 			return;
 		}
 		String secretName = dmd.getCommandArray()[1];
@@ -66,22 +67,23 @@ public class ScenarioSendSecretCommand implements IDiscordCommand {
 			}
 		}
 		if (textMessage == null) {
-			dmd.getChannel().createMessage(secretName + "の秘密がシナリオ情報内に見つかりません。").block();
+			dmd.getChannel().sendMessage(secretName + "の秘密がシナリオ情報内に見つかりません。");
 			return;
 		}
-		TextChannel tc = DiscordUtil.getTextChannelByName(guild, roleName);
-		if (tc == null) {
-			dmd.getChannel().createMessage(roleName + "のチャンネルがサーバ内に見つかりません。").block();
+		List<ServerTextChannel> list = guild.getTextChannelsByName(roleName.toLowerCase());
+		if (list.isEmpty()) {
+			dmd.getChannel().sendMessage(roleName + "のチャンネルがサーバ内に見つかりません。");
 			return;
+		} else {
 		}
 
-		tc.createMessage(textMessage).block();
+		list.get(0).sendMessage(textMessage);
 
 	}
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().createMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。").block();
+		dmd.getChannel().sendMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。");
 	}
 
 	@Override

@@ -50,7 +50,7 @@ public class HelpCommand implements IDiscordCommand {
 
 	@Override
 	public void execute(DiscordMessageData dmd) {
-		dmd.getChannel().createMessage(message).block();
+		dmd.getChannel().sendMessage(message);
 	}
 
 	@Override

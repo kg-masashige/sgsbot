@@ -3,11 +3,12 @@ package csmp.bot.command.schedule;
 import java.util.List;
 import java.util.Map;
 
+import org.javacord.api.entity.server.Server;
+
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
-import discord4j.core.object.entity.Guild;
 
 /**
  * スケジュール表示コマンド.
@@ -32,10 +33,10 @@ public class ScheduleShowCommand implements IDiscordCommand {
 	@Override
 	public void execute(DiscordMessageData dmd) {
 
-		Guild guild = dmd.getGuild();
-		Map<String, Object> guildScheduleInfo = CsmpService.getGuildScheduleInfo(guild.getId().asString());
+		Server guild = dmd.getGuild();
+		Map<String, Object> guildScheduleInfo = CsmpService.getGuildScheduleInfo(guild.getIdAsString());
 		if (guildScheduleInfo == null) {
-			dmd.getChannel().createMessage("セッション予定の取得に失敗しました。登録されていません。").block();
+			dmd.getChannel().sendMessage("セッション予定の取得に失敗しました。登録されていません。");
 			return;
 		}
 
@@ -50,7 +51,7 @@ public class ScheduleShowCommand implements IDiscordCommand {
 			text += "\r\nリマインドメッセージ：" + messageText;
 		}
 
-		dmd.getChannel().createMessage(text).block();
+		dmd.getChannel().sendMessage(text);
 	}
 
 	@Override
