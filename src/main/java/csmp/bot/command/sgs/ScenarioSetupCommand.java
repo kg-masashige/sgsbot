@@ -6,21 +6,21 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
+import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.ServerTextChannelBuilder;
+import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.permission.PermissionsBuilder;
+import org.javacord.api.entity.permission.Role;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.server.ServerUpdater;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
-import csmp.utl.DiscordUtil;
-import discord4j.core.object.PermissionOverwrite;
-import discord4j.core.object.entity.Category;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.GuildChannel;
-import discord4j.core.object.entity.Role;
-import discord4j.core.object.entity.TextChannel;
-import discord4j.core.object.util.Snowflake;
 
 /**
  * シナリオ情報セットアップコマンド.
@@ -47,26 +47,25 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
-		Guild guild = dmd.getGuild();
-		Category category = dmd.getChannel().getCategory().block();
-		Map<Snowflake, Map<Object,Object>> guildScenarioInfo = CsmpService.getGuildScenarioInfo();
+	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		Server guild = dmd.getGuild();
+		Map<Long, Map<Object,Object>> guildScenarioInfo = CsmpService.getGuildScenarioInfo();
 
 		if (guildScenarioInfo.containsKey(guild.getId())) {
-			dmd.getChannel().createMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。").block();
+			dmd.getChannel().sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。");
 			return;
 		}
 
 		// シナリオ情報取得
 		Map<Object, Object> secretMap = CsmpService.getScenarioSheetInfo(dmd.getCommandArray()[1]);
 		if (secretMap == null) {
-			dmd.getChannel().createMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。").block();
+			dmd.getChannel().sendMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。");
 			return;
 		}
 		guildScenarioInfo.put(guild.getId(), secretMap);
 		String scenarioName = (String)((Map<String, Object>)secretMap.get("base")).get("name");
 		// シナリオ名のメッセージ出力
-		dmd.getChannel().createMessage("シナリオ：" + scenarioName).block();
+		dmd.getChannel().sendMessage("シナリオ：" + scenarioName);
 		System.out.println("シナリオ名：" + scenarioName);
 		if ("/sgsread".equals(dmd.getCommandArray()[0])) {
 			return;
@@ -74,21 +73,17 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 
 		Date current = Calendar.getInstance().getTime();
 		SimpleDateFormat sdf = DateUtil.getDateFormat();
-		guild.edit(spec -> {
-			spec.setName(scenarioName + "_" + sdf.format(current));
-		}).block();
+		new ServerUpdater(guild).setName(scenarioName + "_" + sdf.format(current)).update();
 
 		Map<String, Role> roleMap = new HashMap<>();
-		for (Role role : guild.getRoles().collectList().block()) {
+		for (Role role : guild.getRoles()) {
 			roleMap.put(role.getName().toLowerCase(), role);
 		}
 
-		Map<String, TextChannel> channelMap = new HashMap<>();
-		List<GuildChannel> channels = guild.getChannels().collectList().block();
-		for (GuildChannel channel : channels) {
-			if (channel instanceof TextChannel) {
-				channelMap.put(channel.getName().toLowerCase(), (TextChannel)channel);
-			}
+		Map<String, ServerTextChannel> channelMap = new HashMap<>();
+		List<ServerTextChannel> channels = guild.getTextChannels();
+		for (ServerTextChannel channel : channels) {
+			channelMap.put(channel.getName().toLowerCase(), channel);
 		}
 
 		// PC情報の取得
@@ -98,21 +93,27 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 
 			Role role = roleMap.get(roleName.toLowerCase());
 			if (role == null) {
-				role = guild.createRole(spec -> {
-					spec.setName(roleName);
-				}).block();
+				role = guild.createRoleBuilder()
+						.setName(roleName)
+						.create().get();
 				roleMap.put(roleName.toLowerCase(), role);
 			}
-			Set<PermissionOverwrite> permission = DiscordUtil.getPrivateChannelPermission(role, guild);
-			TextChannel tc = channelMap.get(roleName.toLowerCase());
+
+
+			ServerTextChannel tc = channelMap.get(roleName.toLowerCase());
+
 			if (tc == null) {
-				tc = guild.createTextChannel(spec ->{
-					spec.setName(roleName);
-					if (category != null) {
-						spec.setParentId(category.getId());
-					}
-					spec.setPermissionOverwrites(permission);
-				}).block();
+				ServerTextChannelBuilder stcBuilder = new ServerTextChannelBuilder(guild)
+						.setName(roleName)
+						.addPermissionOverwrite(
+								guild.getEveryoneRole(), new PermissionsBuilder().setDenied(PermissionType.READ_MESSAGES).build())
+						.addPermissionOverwrite(
+								role, new PermissionsBuilder().setAllowed(PermissionType.READ_MESSAGES).build());
+
+				dmd.getCategory().ifPresent(category -> stcBuilder.setCategory(category));
+
+				tc = stcBuilder.create().get();
+
 				channelMap.put(roleName.toLowerCase(), tc);
 			}
 
@@ -123,13 +124,13 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 					"・秘密：\r\n" +
 					CsmpService.text(pcInfo, "secret");
 
-			tc.createMessage(textMessage).block();
+			tc.sendMessage(textMessage);
 		}
 	}
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().createMessage("コマンドは「/sgss <シナリオシートURL>」と入力してください。").block();
+		dmd.getChannel().sendMessage("コマンドは「/sgss <シナリオシートURL>」と入力してください。");
 	}
 
 	@Override

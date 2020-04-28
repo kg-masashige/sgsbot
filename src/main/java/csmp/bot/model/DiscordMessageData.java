@@ -2,20 +2,22 @@ package csmp.bot.model;
 
 import java.util.Optional;
 
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.TextChannel;
+import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.ServerChannel;
+import org.javacord.api.entity.channel.TextChannel;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.event.message.MessageCreateEvent;
 
 public class DiscordMessageData {
 
-	public DiscordMessageData(Message message) {
-		this.message = message;
+	public DiscordMessageData(MessageCreateEvent event) {
+		this.message = event;
 	}
 
 	/**
 	 * メッセージ.
 	 */
-	private Message message = null;
+	private MessageCreateEvent message = null;
 
 	/**
 	 * テキスト.
@@ -25,7 +27,7 @@ public class DiscordMessageData {
 	/**
 	 * ギルド.
 	 */
-	private Guild guild = null;
+	private Server guild = null;
 
 	/**
 	 * チャンネル.
@@ -38,11 +40,16 @@ public class DiscordMessageData {
 	private String[] commandArray = null;
 
 	/**
+	 * カテゴリ
+	 */
+	private ChannelCategory category = null;
+
+	/**
 	 * チャンネルの取得.
 	 */
 	public TextChannel getChannel() {
 		if (channel == null) {
-			channel = (TextChannel)message.getChannel().block();
+			channel = message.getChannel();
 		}
 		return channel;
 	}
@@ -50,9 +57,9 @@ public class DiscordMessageData {
 	/**
 	 * ギルドの取得.
 	 */
-	public Guild getGuild() {
+	public Server getGuild() {
 		if (guild == null) {
-			guild = message.getGuild().block();
+			guild = message.getServer().orElse(null);
 		}
 		return guild;
 	}
@@ -75,13 +82,8 @@ public class DiscordMessageData {
 	 */
 	public String getText() {
 		if (text == null) {
-			Optional<String> content = message.getContent();
-			if (content.isPresent()) {
-				text = content.get();
-			}
-			if (text == null) {
-				text = "";
-			}
+			String content = message.getMessageContent();
+			text = content;
 		}
 
 		return text;
@@ -91,8 +93,25 @@ public class DiscordMessageData {
 	 * メッセージの取得.
 	 * @return
 	 */
-	public Message getMessage() {
+	public MessageCreateEvent getMessage() {
 		return message;
+	}
+
+	/**
+	 * カテゴリーの取得
+	 * @return category
+	 */
+	public Optional<ChannelCategory> getCategory() {
+    	for (ChannelCategory channelCategory : getGuild().getChannelCategories()) {
+			for (ServerChannel serverChannel : channelCategory.getChannels()) {
+				if (serverChannel.getId() == getChannel().getId()) {
+					category = channelCategory;
+					break;
+				}
+			}
+		}
+
+    	return Optional.ofNullable(category);
 	}
 
 }

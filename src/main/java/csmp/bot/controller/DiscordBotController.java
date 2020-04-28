@@ -3,14 +3,12 @@ package csmp.bot.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.javacord.api.DiscordApi;
+import org.javacord.api.DiscordApiBuilder;
+
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.command.help.HelpCommand;
 import csmp.bot.model.DiscordMessageData;
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.event.domain.lifecycle.ReadyEvent;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
 
 public class DiscordBotController extends Thread {
 
@@ -18,11 +16,6 @@ public class DiscordBotController extends Thread {
 	 * コマンドリスト.
 	 */
 	private List<IDiscordCommand> commandList;
-
-	/**
-	 * discordクライアントインスタンス.
-	 */
-	private DiscordClient client;
 
 	/**
 	 * トークン.
@@ -62,18 +55,11 @@ public class DiscordBotController extends Thread {
 	public void run() {
 		System.out.println("Botを起動中...");
 
-		client = new DiscordClientBuilder(token).build();
+		DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
 
-		client.getEventDispatcher().on(ReadyEvent.class)
-		.subscribe(ready -> {
-			System.out.println("Logged in as " + ready.getSelf().getUsername());
-		});
+        api.addMessageCreateListener(event -> {
+        	DiscordMessageData dmd = new DiscordMessageData(event);
 
-		client.getEventDispatcher().on(MessageCreateEvent.class)
-		.subscribe(event -> {
-			Message message = event.getMessage();
-
-			DiscordMessageData dmd = new DiscordMessageData(message);
 			try {
 				for(IDiscordCommand command : commandList) {
 					if (command.judgeExecute(dmd)) {
@@ -89,12 +75,12 @@ public class DiscordBotController extends Thread {
 			} catch (Throwable e) {
 				System.out.println("error command:" + dmd.getText());
 				e.printStackTrace();
-				message.getChannel().block().createMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
+				event.getChannel().sendMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
 			}
 
-		 });
+        });
 
-		client.login().block();
+        System.out.println("Botの起動完了.");
 
 
 	}
