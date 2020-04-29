@@ -61,7 +61,7 @@ public class ScheduleAddCommand implements IDiscordCommand {
 
 
 		String webhookUrl = "https://discordapp.com/api/webhooks/"
-				+ webhook.getIdAsString() + "/" + webhook.getToken();
+				+ webhook.getIdAsString() + "/" + webhook.getToken().get();
 
 		Map<String, Object> result = CsmpService.registerSchedule(guild.getIdAsString(), webhookUrl, dateArray, messageText);
 		if (result != null) {
