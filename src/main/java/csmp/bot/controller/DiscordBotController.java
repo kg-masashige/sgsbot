@@ -2,8 +2,6 @@ package csmp.bot.controller;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
@@ -54,15 +52,15 @@ public class DiscordBotController {
 	 */
 	public void execute() {
 		System.out.println("Botを起動中...");
-		Integer threadPoolCount = Integer.valueOf(System.getenv("THREAD_POOL_COUNT"));
-		System.out.println("スレッドプール：" + threadPoolCount);
-		if (threadPoolCount == null) {
-			threadPoolCount = 1;
-		}
+//		Integer threadPoolCount = Integer.valueOf(System.getenv("THREAD_POOL_COUNT"));
+//		System.out.println("スレッドプール：" + threadPoolCount);
+//		if (threadPoolCount == null) {
+//			threadPoolCount = 1;
+//		}
 
 		DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
 
-		ExecutorService exec = Executors.newFixedThreadPool(threadPoolCount);
+//		ExecutorService exec = Executors.newFixedThreadPool(threadPoolCount);
 
 		api.addMessageCreateListener(event -> {
 			DiscordMessageData dmd = new DiscordMessageData(event);
@@ -71,10 +69,10 @@ public class DiscordBotController {
 				for (IDiscordCommand command : commandList) {
 					if (command.judgeExecute(dmd)) {
 
-						// コマンドのチェック、実行処理をスレッド化する
-						exec.execute(new Runnable() {
-							@Override
-							public void run() {
+//						// コマンドのチェック、実行処理をスレッド化する
+//						exec.execute(new Runnable() {
+//							@Override
+//							public void run() {
 								if (command.checkInput(dmd)) {
 									try {
 										command.execute(dmd);
@@ -84,8 +82,8 @@ public class DiscordBotController {
 								} else {
 									command.warning(dmd);
 								}
-							}
-			        	});
+//							}
+//			        	});
 
 						break;
 					}
