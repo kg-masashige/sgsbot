@@ -1,19 +1,14 @@
 package csmp.bot.command.schedule;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.server.Server;
-import org.javacord.api.entity.webhook.Webhook;
-import org.javacord.api.entity.webhook.WebhookBuilder;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
+import csmp.utl.DiscordUtil;
 
 /**
  * スケジュール追加コマンド.
@@ -24,6 +19,9 @@ public class ScheduleAddCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if (dmd.getText().startsWith("/scheadd")) {
 			return true;
 		}
@@ -47,29 +45,15 @@ public class ScheduleAddCommand implements IDiscordCommand {
 			messageText = dmd.getCommandArray()[2];
 		}
 
-		ServerTextChannel tc = (ServerTextChannel)dmd.getChannel();
-		Server guild = dmd.getGuild();
-		List<Webhook> webhookList = tc.getWebhooks().get();
-		Webhook webhook;
-		if (webhookList == null || webhookList.isEmpty()) {
-			webhook = new WebhookBuilder(tc)
-					.setName(guild.getName())
-					.create().get();
-		} else {
-			webhook = webhookList.get(0);
-		}
+		String webhookUrl = DiscordUtil.getWebhookUrl(dmd);
 
-
-		String webhookUrl = "https://discordapp.com/api/webhooks/"
-				+ webhook.getIdAsString() + "/" + webhook.getToken().get();
-
-		Map<String, Object> result = CsmpService.registerSchedule(guild.getIdAsString(), webhookUrl, dateArray, messageText);
+		Map<String, Object> result = CsmpService.getInstance().registerSchedule(dmd.getGuild().getIdAsString(), webhookUrl, dateArray, messageText);
 		if (result != null) {
-			tc.sendMessage(dateArray + "を登録しました。");
-			System.out.println("サーバ：" + guild.getName() + "　登録日：" + dateArray);
+			dmd.getChannel().sendMessage(dateArray + "を登録しました。");
+			System.out.println("サーバ：" + dmd.getGuild().getName() + "　登録日：" + dateArray);
 		} else {
-			tc.sendMessage("予定日の登録に失敗しました。");
-			System.out.println("サーバ：" + guild.getName() + "　登録失敗：" + dateArray);
+			dmd.getChannel().sendMessage("予定日の登録に失敗しました。");
+			System.out.println("サーバ：" + dmd.getGuild().getName() + "　登録失敗：" + dateArray);
 		}
 
 	}

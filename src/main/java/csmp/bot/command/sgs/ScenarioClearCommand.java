@@ -22,6 +22,9 @@ public class ScenarioClearCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if (dmd.getText().equals("/sgsclear")) {
 			return true;
 		}
@@ -36,7 +39,7 @@ public class ScenarioClearCommand implements IDiscordCommand {
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 		Server guild = dmd.getGuild();
-		Map<Object, Object> secretMap = CsmpService.getGuildScenarioInfo().remove(guild.getId());
+		Map<Object, Object> secretMap = CsmpService.getInstance().getGuildScenarioInfo().remove(guild.getId());
 		if (secretMap == null) {
 			dmd.getChannel().sendMessage("シナリオ情報が設定されていません。");
 			return;

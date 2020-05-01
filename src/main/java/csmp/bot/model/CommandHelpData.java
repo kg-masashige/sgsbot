@@ -1,5 +1,7 @@
 package csmp.bot.model;
 
+import java.util.List;
+
 public class CommandHelpData {
 
 	private String commandText;
@@ -7,6 +9,8 @@ public class CommandHelpData {
 	private String explainMessage;
 
 	private String explainDetail;
+
+	private List<CommandHelpData> helpList;
 
 	public CommandHelpData(String commandText, String explainMessage) {
 		this.commandText = commandText;
@@ -19,6 +23,10 @@ public class CommandHelpData {
 		this.explainDetail = explainDetail;
 	}
 
+	public CommandHelpData(List<CommandHelpData> helpList) {
+		this.helpList = helpList;
+	}
+
 	public String getCommandText() {
 		return commandText;
 	}
@@ -29,6 +37,10 @@ public class CommandHelpData {
 
 	public String getExplainDetail() {
 		return explainDetail;
+	}
+
+	public List<CommandHelpData> getHelpList() {
+		return helpList;
 	}
 
 }

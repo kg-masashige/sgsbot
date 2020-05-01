@@ -19,6 +19,9 @@ public class ScheduleShowCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if (dmd.getText().equals("/scheshow")) {
 			return true;
 		}
@@ -34,7 +37,7 @@ public class ScheduleShowCommand implements IDiscordCommand {
 	public void execute(DiscordMessageData dmd) {
 
 		Server guild = dmd.getGuild();
-		Map<String, Object> guildScheduleInfo = CsmpService.getGuildScheduleInfo(guild.getIdAsString());
+		Map<String, Object> guildScheduleInfo = CsmpService.getInstance().getGuildScheduleInfo(guild.getIdAsString());
 		if (guildScheduleInfo == null) {
 			dmd.getChannel().sendMessage("セッション予定の取得に失敗しました。登録されていません。");
 			return;

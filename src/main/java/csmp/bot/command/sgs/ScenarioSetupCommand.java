@@ -1,6 +1,7 @@
 package csmp.bot.command.sgs;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +32,9 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if (dmd.getText().startsWith("/sgss ") || dmd.getText().startsWith("/sgread ")) {
 			return true;
 		}
@@ -49,7 +53,8 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 		Server guild = dmd.getGuild();
-		Map<Long, Map<Object,Object>> guildScenarioInfo = CsmpService.getGuildScenarioInfo();
+		CsmpService csmpService = CsmpService.getInstance();
+		Map<Long, Map<Object,Object>> guildScenarioInfo = csmpService.getGuildScenarioInfo();
 
 		if (guildScenarioInfo.containsKey(guild.getId())) {
 			dmd.getChannel().sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。");
@@ -57,7 +62,7 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 		}
 
 		// シナリオ情報取得
-		Map<Object, Object> secretMap = CsmpService.getScenarioSheetInfo(dmd.getCommandArray()[1]);
+		Map<Object, Object> secretMap = csmpService.getScenarioSheetInfo(dmd.getCommandArray()[1]);
 		if (secretMap == null) {
 			dmd.getChannel().sendMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。");
 			return;
@@ -135,8 +140,14 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		return new CommandHelpData(
+		List<CommandHelpData> list = new ArrayList<>();
+		list.add(new CommandHelpData(
+				"/sgsread <シナリオシートURL>",
+				"シナリオシートの情報の読み込みだけ行う。"));
+		list.add(new CommandHelpData(
 				"/sgss <シナリオシートURL>",
-				"シナリオシートの情報を読み込んでチャンネル、権限を設定する。");
+				"シナリオシートの情報を読み込んでチャンネル、権限を設定する。"));
+
+		return new CommandHelpData(list);
 	}
 }

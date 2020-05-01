@@ -1,65 +1,61 @@
 package csmp.service;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import csmp.utl.HttpConnectionUtil;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Form;
+
 import net.arnx.jsonic.JSON;
 
-public class CsmpService {
+public class CsmpService extends BaseService {
 
-	private static Map<Long, Map<Object,Object>> guildScenarioInfo = new ConcurrentHashMap<>();
+	private Map<Long, Map<Object,Object>> guildScenarioInfo = new ConcurrentHashMap<>();
 
-	/**
-	 * キャラクターシートのベースURL取得。
-	 * @return テスト環境だとlocal。
-	 */
-	private static String getBaseURL() {
-		return System.getenv("CHARACTER_SHEETS_URL");
+	private static CsmpService instance;
+
+	public synchronized static CsmpService getInstance() {
+		if (instance == null) {
+			instance = new CsmpService();
+		}
+		return instance;
 	}
+
+	private CsmpService() {
+		if (csmpUrl == null) {
+			csmpUrl = System.getenv("CHARACTER_SHEETS_URL");
+			csmpUrl = csmpUrl.endsWith("/") ? csmpUrl : csmpUrl + "/";
+		}
+	}
+
+	private String csmpUrl = null;
 
 	/**
 	 * シナリオシート情報を取得する.
 	 * @param sheetUrl シナリオシートURL.
 	 * @return シナリオ秘密Map
 	 */
-	public static Map<Object, Object> getScenarioSheetInfo(String sheetUrl) {
-		// TODO 入力チェック
-		try {
-			if (sheetUrl.startsWith("<") && sheetUrl.endsWith(">")) {
-				sheetUrl = sheetUrl.substring(1, sheetUrl.length() - 1);
-			}
-			String dispUrl = sheetUrl.replace("edit.html", "display") + "&ajax=1";
-			if (dispUrl.contains("detail")) {
-				dispUrl = dispUrl.replace("detail", "display");
+	public Map<Object, Object> getScenarioSheetInfo(String sheetUrl) {
+
+		String key = getKey(sheetUrl);
+
+		if (key == null) {
+			return null;
+		}
+
+		String dispUrl = csmpUrl + "sgScenario/display?ajax=1&key=" + key;
+		String result = get(dispUrl);
+		if (result != null) {
+			Map<Object, Object> map = JSON.decode(result);
+			Map<String, Object> baseMap = (Map<String, Object>)map.get("base");
+			if (baseMap != null && "1".equals(baseMap.get("publicview"))) {
+				String openUrl = dispUrl.replace("display", "openSecret");
+				String secret = post(openUrl, Entity.form(new Form().param("pass", text(baseMap, "publicviewpass"))));
+				Map<Object, Object> secretMap = JSON.decode(secret);
+
+				return secretMap;
 			}
 
-			HttpURLConnection con = HttpConnectionUtil.getConnection(dispUrl);
-			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
-			writer.close();
-			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Map<Object, Object> map = JSON.decode(con.getInputStream());
-				con.disconnect();
-				Map<String, Object> baseMap = (Map<String, Object>)map.get("base");
-				if (baseMap != null && "1".equals(baseMap.get("publicview"))) {
-					String openUrl = dispUrl.replace("display", "openSecret");
-					HttpURLConnection secretCon = HttpConnectionUtil.getConnection(openUrl);
-					OutputStreamWriter secretWriter = new OutputStreamWriter(secretCon.getOutputStream());
-					secretWriter.write("pass=" + text(baseMap, "publicviewpass"));
-					secretWriter.flush();
-					secretWriter.close();
-					Map<Object, Object> secretMap = JSON.decode(secretCon.getInputStream());
-					secretCon.disconnect();
-
-					return secretMap;
-				}
-			}
-		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
 		}
 
 		return null;
@@ -88,29 +84,21 @@ public class CsmpService {
 	 * @param message リマインドメッセージ
 	 * @return 登録情報
 	 */
-	public static Map<String, Object> registerSchedule(String guildId, String webhook, String dates, String message) {
+	public Map<String, Object> registerSchedule(String guildId, String webhook, String dates, String message) {
 
-		try {
-			String registerUrl = getBaseURL() + "sgsbot/registerSchedule";
+		String registerUrl = csmpUrl + "sgsbot/registerSchedule";
 
-			HttpURLConnection con = HttpConnectionUtil.getConnection(registerUrl);
-			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
-			writer.write("guildId=" + guildId);
-			writer.write("&webhook=" + webhook);
-			writer.write("&dates=" + dates);
-			writer.write("&message=" + message);
-			writer.flush();
-			writer.close();
-			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Map<String, Object> map = JSON.decode(con.getInputStream());
-				con.disconnect();
+		String result = post(registerUrl, Entity.form(new Form()
+				.param("guildId", guildId)
+				.param("webhook", webhook)
+				.param("dates", dates)
+				.param("message", message)
+				));
 
-				return map;
-			}
-		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
+		if (result != null) {
+			return JSON.decode(result);
 		}
+
 		return null;
 
 	}
@@ -121,27 +109,19 @@ public class CsmpService {
 	 * @param dates カンマ区切りの日付
 	 * @return 削除情報
 	 */
-	public static Map<String, Object> deleteSchedule(String guildId, String dates) {
+	public Map<String, Object> deleteSchedule(String guildId, String dates) {
 
-		try {
-			String registerUrl = getBaseURL() + "sgsbot/deleteSchedule";
+		String registerUrl = csmpUrl + "sgsbot/deleteSchedule";
 
-			HttpURLConnection con = HttpConnectionUtil.getConnection(registerUrl);
-			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
-			writer.write("guildId=" + guildId);
-			writer.write("&dates=" + dates);
-			writer.flush();
-			writer.close();
-			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Map<String, Object> map = JSON.decode(con.getInputStream());
-				con.disconnect();
+		String result = post(registerUrl, Entity.form(new Form()
+				.param("guildId", guildId)
+				.param("dates", dates)
+				));
 
-				return map;
-			}
-		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
+		if (result != null) {
+			return JSON.decode(result);
 		}
+
 		return null;
 
 	}
@@ -151,33 +131,75 @@ public class CsmpService {
 	 * @param guildId ギルドID
 	 * @return サーバ情報。現在はセッション予定日情報。
 	 */
-	public static Map<String, Object> getGuildScheduleInfo(String guildId) {
+	public Map<String, Object> getGuildScheduleInfo(String guildId) {
 
-		try {
-			String url = getBaseURL() + "sgsbot/listSchedule";
+		String registerUrl = csmpUrl + "sgsbot/listSchedule";
 
-			HttpURLConnection con = HttpConnectionUtil.getConnection(url);
-			OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
-			writer.write("guildId=" + guildId);
-			writer.flush();
-			writer.close();
-			if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				Map<String, Object> map = JSON.decode(con.getInputStream());
-				con.disconnect();
+		String result = post(registerUrl, Entity.form(new Form()
+				.param("guildId", guildId)
+				));
 
-				return map;
-			}
-		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
+		if (result != null) {
+			return JSON.decode(result);
 		}
 
 		return null;
 
 	}
 
-	public static Map<Long, Map<Object,Object>> getGuildScenarioInfo() {
+	/**
+	 * キャラクターシートとwebhookの紐付け登録をする.
+	 * @param webhook webhookURL
+	 * @param key キャラシのキー
+	 * @return 結果
+	 */
+	public Map<String, Object> registerCharacterSheet(String webhook, String sheetUrl) {
+		String registerUrl = csmpUrl + "cooperation/discord/registerCharacterSheet";
+
+		String key = getKey(sheetUrl);
+		if (key != null) {
+			String result = post(registerUrl, Entity.form(new Form()
+					.param("webhook", webhook)
+					.param("key", key)
+					));
+
+			if (result != null) {
+				return JSON.decode(result);
+			}
+		}
+
+
+		return null;
+
+	}
+
+	public Map<Long, Map<Object,Object>> getGuildScenarioInfo() {
 		return guildScenarioInfo;
+	}
+
+	private static final String KEY_QUERY_NAME = "key=";
+
+	/**
+	 * キャラシ倉庫URLからシートのキーを取得する
+	 * @param url 入力されたURL
+	 * @return キー
+	 */
+	private String getKey(String url) {
+		String sheetUrl = url;
+		if (sheetUrl.startsWith("<") && sheetUrl.endsWith(">")) {
+			sheetUrl = sheetUrl.substring(1, sheetUrl.length() - 1);
+		}
+
+		if (sheetUrl.contains(KEY_QUERY_NAME)) {
+			String key = sheetUrl.substring(sheetUrl.indexOf(KEY_QUERY_NAME) + KEY_QUERY_NAME.length());
+			if (key.contains("&")) {
+				key = key.substring(0, key.indexOf("&"));
+			}
+			return key;
+		}
+
+		return null;
+
 	}
 
 }

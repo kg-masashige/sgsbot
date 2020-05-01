@@ -18,6 +18,9 @@ public class ScheduleDeleteCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if (dmd.getText().startsWith("/schedel")) {
 			return true;
 		}
@@ -39,7 +42,7 @@ public class ScheduleDeleteCommand implements IDiscordCommand {
 		if (!"all".equalsIgnoreCase(dateArray)) {
 			dateArray = DateUtil.toFormatDateArray(dmd.getCommandArray()[1]);
 		}
-		Map<String, Object> result = CsmpService.deleteSchedule(dmd.getGuild().getIdAsString(), dateArray);
+		Map<String, Object> result = CsmpService.getInstance().deleteSchedule(dmd.getGuild().getIdAsString(), dateArray);
 		if (result != null) {
 			dmd.getChannel().sendMessage(dateArray + "を削除しました。");
 		} else {

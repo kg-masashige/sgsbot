@@ -25,7 +25,7 @@ public class HelpCommand implements IDiscordCommand {
 	}
 
 	public void setCommandList(List<IDiscordCommand> commandList) {
-		message = "■コマンド一覧（<>は除いて発言してね）\r\n";
+		message = "■コマンド一覧（<>は除いて発言してください）\r\n";
 		message += createCommandHelp(getCommandHelpData());
 		for (IDiscordCommand command : commandList) {
 			CommandHelpData helpData = command.getCommandHelpData();
@@ -34,6 +34,14 @@ public class HelpCommand implements IDiscordCommand {
 	}
 
 	private String createCommandHelp(CommandHelpData helpData) {
+		if (helpData.getHelpList() != null) {
+			String helps = "";
+			for (CommandHelpData data : helpData.getHelpList()) {
+				helps += createCommandHelp(data);
+			}
+			return helps;
+		}
+
 		String help = helpData.getCommandText() + "\r\n" +
 				"　　　" + helpData.getExplainMessage() + "\r\n";
 		if (helpData.getExplainDetail() != null) {
