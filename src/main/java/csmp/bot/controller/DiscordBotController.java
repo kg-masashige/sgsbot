@@ -50,17 +50,9 @@ public class DiscordBotController {
 	/**
 	 * 実行メソッド.
 	 */
-	public void execute() {
+	public void execute(String joinMessage) {
 		System.out.println("Botを起動中...");
-//		Integer threadPoolCount = Integer.valueOf(System.getenv("THREAD_POOL_COUNT"));
-//		System.out.println("スレッドプール：" + threadPoolCount);
-//		if (threadPoolCount == null) {
-//			threadPoolCount = 1;
-//		}
-
 		DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
-
-//		ExecutorService exec = Executors.newFixedThreadPool(threadPoolCount);
 
 		api.addMessageCreateListener(event -> {
 			DiscordMessageData dmd = new DiscordMessageData(event);
@@ -69,22 +61,15 @@ public class DiscordBotController {
 				for (IDiscordCommand command : commandList) {
 					if (command.judgeExecute(dmd)) {
 
-//						// コマンドのチェック、実行処理をスレッド化する
-//						exec.execute(new Runnable() {
-//							@Override
-//							public void run() {
-								if (command.checkInput(dmd)) {
-									try {
-										command.execute(dmd);
-									} catch (Throwable e) {
-										handleError(dmd, e);
-									}
-								} else {
-									command.warning(dmd);
-								}
-//							}
-//			        	});
-
+						if (command.checkInput(dmd)) {
+							try {
+								command.execute(dmd);
+							} catch (Throwable e) {
+								handleError(dmd, e);
+							}
+						} else {
+							command.warning(dmd);
+						}
 						break;
 					}
 				}
@@ -96,9 +81,7 @@ public class DiscordBotController {
 		});
 
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
-				.ifPresent(channel -> channel.sendMessage("TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
-						+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
-						+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。")));
+				.ifPresent(channel -> channel.sendMessage(joinMessage)));
 
 		System.out.println("Botの起動完了.");
 

@@ -1,5 +1,6 @@
 package csmp.service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -101,6 +102,36 @@ public class CsmpService extends BaseService {
 
 		return null;
 
+	}
+
+	/**
+	 * 日程調整ページ作成.
+	 */
+	public Map<String, Object> createScheduleAdjustment(String guildId, String serverName, String webhook, String authorIdName,
+			List<String> userIdNameList) {
+
+		String registerUrl = csmpUrl + "/schedule/create";
+		Form form = new Form();
+		form.param("guildId", guildId);
+		form.param("serverName", serverName);
+		form.param("webhook", webhook);
+		form.param("authorIdName", authorIdName);
+		for (String userIdName : userIdNameList) {
+			form.param("userIdNames", userIdName);
+		}
+
+		String result = post(registerUrl, Entity.form(form));
+
+		if (result != null) {
+			Map<String, Object> map = JSON.decode(result);
+			if (map.containsKey("key")) {
+				map.put("url", csmpUrl + "schedule/edit?key=" + map.get("key"));
+			}
+
+			return map;
+		}
+
+		return null;
 	}
 
 	/**
