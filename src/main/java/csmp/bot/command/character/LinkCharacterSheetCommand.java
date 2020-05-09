@@ -34,8 +34,13 @@ public class LinkCharacterSheetCommand implements IDiscordCommand {
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 		String sheetUrl = dmd.getCommandArray()[1];
 
+		String webhookUrl = DiscordUtil.getWebhookUrl(dmd);
 
-		Map<String, Object> result = CsmpService.getInstance().registerCharacterSheet(DiscordUtil.getWebhookUrl(dmd), sheetUrl);
+		if (webhookUrl == null) {
+			return;
+		}
+
+		Map<String, Object> result = CsmpService.getInstance().registerCharacterSheet(webhookUrl, sheetUrl);
 		if (result != null && "ok".equals(result.get("result"))) {
 			dmd.getChannel().sendMessage("キャラクターシートを登録しました。キャラクターシートでDRボタンを押してください。");
 

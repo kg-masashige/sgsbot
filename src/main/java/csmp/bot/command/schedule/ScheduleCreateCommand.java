@@ -41,6 +41,11 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 
 		String webhookUrl = DiscordUtil.getWebhookUrl(dmd);
+
+		if (webhookUrl == null) {
+			return;
+		}
+
         String guildId = dmd.getGuild().getIdAsString();
         String serverName = dmd.getGuild().getName();
         MessageAuthor author = dmd.getMessage().getMessageAuthor();
