@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.entity.user.User;
 
@@ -26,9 +27,15 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 		if (dmd.getGuild() == null) {
 			return false;
 		}
-		if (dmd.getText().equals("/sche") || dmd.getText().equals("/schedule") || dmd.getText().equals("/スケジュール")) {
+		if (dmd.getText().equals("/スケジュール")) {
 			return true;
 		}
+
+		// チャンネル単位追加
+		if (dmd.getText().equals("/スケジュールforCh")) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -48,6 +55,12 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
         String guildId = dmd.getGuild().getIdAsString();
         String serverName = dmd.getGuild().getName();
+        if (dmd.getText().equals("/スケジュールforCh")
+    		&& dmd.getChannel() instanceof ServerTextChannel) {
+        	guildId += "#" + dmd.getChannel().getIdAsString();
+        	serverName += "#" + ((ServerTextChannel)dmd.getChannel()).getName();
+        }
+
         MessageAuthor author = dmd.getMessage().getMessageAuthor();
         User authorUser = author.asUser().orElse(null);
         String authorName = author.getDisplayName();
@@ -85,9 +98,17 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		return new CommandHelpData("/スケジュール",
+		List<CommandHelpData> list = new ArrayList<>();
+		list.add(new CommandHelpData("/スケジュール",
 				"日程調整用のページを作成する。",
-				"作成したページURLがチャンネルに通知される。");
+				"作成したページURLがチャンネルに通知される。"
+				));
+		list.add(new CommandHelpData("/スケジュールforCh",
+				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
+				"コマンドは「/スケジュールforCh」固定。チャンネル名は不要。"
+				));
+
+		return new CommandHelpData(list);
 	}
 
 
