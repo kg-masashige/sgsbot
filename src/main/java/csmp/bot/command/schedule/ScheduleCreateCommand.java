@@ -7,6 +7,9 @@ import java.util.concurrent.ExecutionException;
 
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
+import org.javacord.api.entity.permission.PermissionState;
+import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.permission.Permissions;
 import org.javacord.api.entity.user.User;
 
 import csmp.bot.command.IDiscordCommand;
@@ -55,12 +58,6 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
         String guildId = dmd.getGuild().getIdAsString();
         String serverName = dmd.getGuild().getName();
-        if (dmd.getText().equals("/スケジュールforCh")
-    		&& dmd.getChannel() instanceof ServerTextChannel) {
-        	guildId += "#" + dmd.getChannel().getIdAsString();
-        	serverName += "#" + ((ServerTextChannel)dmd.getChannel()).getName();
-        }
-
         MessageAuthor author = dmd.getMessage().getMessageAuthor();
         User authorUser = author.asUser().orElse(null);
         String authorName = author.getDisplayName();
@@ -70,12 +67,30 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         String authorIdName = author.getIdAsString() + ":" + authorName;
 
         List<String> userIdNameList = new ArrayList<>();
+
+        ServerTextChannel stc = null;
+        if (dmd.getText().equals("/スケジュールforCh")
+    		&& dmd.getChannel() instanceof ServerTextChannel) {
+        	guildId += "#" + dmd.getChannel().getIdAsString();
+        	stc = (ServerTextChannel)dmd.getChannel();
+        	serverName += "#" + stc.getName();
+        }
         for (User user : dmd.getGuild().getMembers()) {
-        	if (!user.isBot()) {
-    			String userIdName = user.getIdAsString() + ":" +
-    					user.getNickname(dmd.getGuild()).orElse(user.getDisplayName(dmd.getGuild()));
-    			userIdNameList.add(userIdName);
+        	if (user.isBot()) {
+        		// botはスルー
+        		continue;
         	}
+    		if (stc != null) {
+        		Permissions permissions = stc.getEffectivePermissions(user);
+        		if (permissions.getState(PermissionType.READ_MESSAGES) == PermissionState.DENIED) {
+        			// 読み込み権限がなければスルー
+        			continue;
+        		}
+    		}
+
+			String userIdName = user.getIdAsString() + ":" +
+					user.getNickname(dmd.getGuild()).orElse(user.getDisplayName(dmd.getGuild()));
+			userIdNameList.add(userIdName);
 		}
 
 		Map<String, Object> result = CsmpService.getInstance().createScheduleAdjustment(
@@ -110,6 +125,4 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
 		return new CommandHelpData(list);
 	}
-
-
 }
