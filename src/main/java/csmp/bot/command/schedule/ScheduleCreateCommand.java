@@ -93,6 +93,12 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 			userIdNameList.add(userIdName);
 		}
 
+        if (userIdNameList.size() > 50) {
+        	dmd.getChannel().sendMessage("作成できるスケジュールは50人までです。\n"
+        			+ "50人以下のチャンネルを作成して、/スケジュールforChコマンドで作成してください。");
+        	return;
+        }
+
 		Map<String, Object> result = CsmpService.getInstance().createScheduleAdjustment(
 				guildId, serverName, webhookUrl, authorIdName, userIdNameList
 				);
@@ -116,11 +122,11 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 		List<CommandHelpData> list = new ArrayList<>();
 		list.add(new CommandHelpData("/スケジュール",
 				"日程調整用のページを作成する。",
-				"作成したページURLがチャンネルに通知される。"
+				"作成したページURLがチャンネルに通知される。サーバ内のユーザ数が100人を超えるとエラー。"
 				));
 		list.add(new CommandHelpData("/スケジュールforCh",
 				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
-				"コマンドは「/スケジュールforCh」固定。チャンネル名は不要。"
+				"コマンドは「/スケジュールforCh」固定。チャンネル名は不要。チャンネル内のユーザ数が100人を超えるとエラー。"
 				));
 
 		return new CommandHelpData(list);
