@@ -21,6 +21,10 @@ public class HelpCommand implements IDiscordCommand {
 				&& dmd.getText().contains("help")) {
 			return true;
 		}
+		if (dmd.getText().equals("/デイコードヘルプ")) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -67,7 +71,7 @@ public class HelpCommand implements IDiscordCommand {
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		return new CommandHelpData("/sgshelp", "コマンド一覧の表示。");
+		return new CommandHelpData("/sgshelp もしくは /デイコードヘルプ", "コマンド一覧の表示。");
 	}
 
 }

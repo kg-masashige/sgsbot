@@ -83,6 +83,9 @@ public class DiscordMessageData {
 	public String getText() {
 		if (text == null) {
 			String content = message.getMessageContent();
+			if (content == null) {
+				content = "";
+			}
 			text = content;
 		}
 

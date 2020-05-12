@@ -62,7 +62,8 @@ public class DiscordSessionSupportBot {
 		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordToken);
 		daycordBot.execute("デイコードはDiscordと連携して日程調整ができるサービスです。\n"
 				+ "「/スケジュール」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
-				+ "チャンネル参加者ごとで別々にスケジュール調整ページを作りたい場合は「/スケジュールforCh」と入力してください。");
+				+ "チャンネル参加者ごとで別々にスケジュール調整ページを作りたい場合は「/スケジュールforCh」と入力してください。\n"
+				+ "その他オプションは「/デイコードヘルプ」で確認してください。");
 
 	}
 
