@@ -103,4 +103,25 @@ public class BcDiceApiService extends BaseService {
 		return systemNamesMap;
 	}
 
+	public synchronized String getSystemInfo(String system) {
+		String path = "v1/systeminfo?system=";
+		try {
+			path += URLEncoder.encode(system, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		};
+
+		String result = get(bcDiceApiUrl + path);
+
+		if (result != null) {
+			Map<String, Object> map = JSON.decode(result);
+			Map<String, String> systeminfo = (Map<String, String>)map.get("systeminfo");
+			if (systeminfo != null) {
+				return (String)systeminfo.get("info");
+			}
+		}
+
+		return null;
+	}
+
 }

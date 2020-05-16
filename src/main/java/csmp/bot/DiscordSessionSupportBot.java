@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.bcdice.BcDiceGetSystemInfoCommand;
+import csmp.bot.command.bcdice.BcDiceSearchSystemNameCommand;
 import csmp.bot.command.bcdice.BcDiceRollCommand;
 import csmp.bot.command.bcdice.BcDiceSetSystemCommand;
 import csmp.bot.command.bcdice.PlotOpenCommand;
@@ -40,7 +42,9 @@ public class DiscordSessionSupportBot {
 		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
 		bcDiceBotClassList.add(PlotOpenCommand.class);
 		bcDiceBotClassList.add(LinkCharacterSheetCommand.class);
+		bcDiceBotClassList.add(BcDiceSearchSystemNameCommand.class);
 		bcDiceBotClassList.add(BcDiceSetSystemCommand.class);
+		bcDiceBotClassList.add(BcDiceGetSystemInfoCommand.class);
 		bcDiceBotClassList.add(BcDiceRollCommand.class);
 
 
