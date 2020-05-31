@@ -129,13 +129,16 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 		} else if (!"ok".equals(result.get("result"))) {
 			dmd.getChannel().sendMessage(String.valueOf(result.get("error")));
 		} else {
-			String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力してください。\n"
-					+ "参加者の方は、候補日日程入力が終わった連絡を受けてから日程状況一覧＞各個人の日程入力ページへと移動し、入力してください。\n"
-				+  "候補日設定用URL： " + result.get("url");
-			if (webhookChannel != null) {
-				webhookChannel.sendMessage(message);
-			} else {
-				dmd.getChannel().sendMessage(message);
+			if (result.containsKey("url")) {
+
+				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力してください。\n"
+						+ "参加者の方は、候補日日程入力が終わった連絡を受けてから日程状況一覧＞各個人の日程入力ページへと移動し、入力してください。\n"
+					+  "[候補日設定用URL](" + result.get("url") + " )";
+				if (webhookChannel != null) {
+					webhookChannel.sendMessage(message);
+				} else {
+					dmd.getChannel().sendMessage(message);
+				}
 			}
 		}
 

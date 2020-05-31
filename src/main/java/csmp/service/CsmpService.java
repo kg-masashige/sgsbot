@@ -1,5 +1,6 @@
 package csmp.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -104,31 +105,59 @@ public class CsmpService extends BaseService {
 
 	}
 
+	private static Map<String, String> guildExecutionMap = new ConcurrentHashMap<>();
+
+	private static synchronized boolean checkGuildId(String guildId) {
+		boolean isExecution = guildExecutionMap.containsKey(guildId);
+		if (!isExecution) {
+			guildExecutionMap.put(guildId, guildId);
+			return true;
+		}
+		return false;
+	}
+
+	private static synchronized void removeGuildId(String guildId) {
+		guildExecutionMap.remove(guildId);
+	}
+
 	/**
 	 * 日程調整ページ作成.
 	 */
 	public Map<String, Object> createScheduleAdjustment(String guildId, String serverName, String webhook, String authorIdName,
 			List<String> userIdNameList) {
 
-		String registerUrl = csmpUrl + "/schedule/create";
-		Form form = new Form();
-		form.param("guildId", guildId);
-		form.param("serverName", serverName);
-		form.param("webhook", webhook);
-		form.param("authorIdName", authorIdName);
-		for (String userIdName : userIdNameList) {
-			form.param("userIdNames", userIdName);
-		}
+		try {
+			if (!checkGuildId(guildId)) {
+				Map<String, Object> map = new HashMap<>();
+				map.put("result", "ng");
+				map.put("error", "複数のデイコードが同時に動作しているため、処理を中断しました。");
 
-		String result = post(registerUrl, Entity.form(form));
-
-		if (result != null) {
-			Map<String, Object> map = JSON.decode(result);
-			if (map.containsKey("key")) {
-				map.put("url", csmpUrl + "schedule/edit?key=" + map.get("key"));
+				return map;
 			}
 
-			return map;
+			String registerUrl = csmpUrl + "/schedule/create";
+			Form form = new Form();
+			form.param("guildId", guildId);
+			form.param("serverName", serverName);
+			form.param("webhook", webhook);
+			form.param("authorIdName", authorIdName);
+			for (String userIdName : userIdNameList) {
+				form.param("userIdNames", userIdName);
+			}
+
+			String result = post(registerUrl, Entity.form(form));
+
+			if (result != null) {
+				Map<String, Object> map = JSON.decode(result);
+				if (map.containsKey("key")) {
+					map.put("url", csmpUrl + "schedule/edit?key=" + map.get("key"));
+				}
+
+				return map;
+			}
+
+		} finally {
+			removeGuildId(guildId);
 		}
 
 		return null;
