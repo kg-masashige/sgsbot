@@ -11,6 +11,7 @@ import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.entity.permission.PermissionState;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Permissions;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 
 import csmp.bot.command.IDiscordCommand;
@@ -53,11 +54,42 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 
+		String roleName = null;
+		String webhookChannelName = null;
+
+		if (dmd.getCommandArray().length > 1) {
+			if (!"-role".equals(dmd.getCommandArray()[1])) {
+				webhookChannelName = dmd.getCommandArray()[1];
+			}
+			for (int i = 1; i < dmd.getCommandArray().length; i++) {
+				if ("-role".equals(dmd.getCommandArray()[i])) {
+					if (dmd.getCommandArray().length - 1 > i) {
+						roleName = dmd.getCommandArray()[i + 1];
+					} else {
+						dmd.getChannel().sendMessage("-roleの後にはロール名を指定してください。");
+						return;
+					}
+
+				}
+			}
+		}
+
+		Role role = null;
+		if (roleName != null) {
+			List<Role> roles = dmd.getGuild().getRolesByName(roleName);
+			if (!roles.isEmpty()) {
+				role = roles.get(0);
+			} else {
+				dmd.getChannel().sendMessage(roleName + "のロールが見つかりません。");
+				return;
+			}
+		}
+
+
 		String webhookUrl = null;
 		ServerTextChannel webhookChannel = null;
-		if (dmd.getCommandArray().length > 1) {
+		if (webhookChannelName != null) {
 			// 通知先チャンネルを別にする。
-			String webhookChannelName = dmd.getCommandArray()[1];
 			List<ServerChannel> channelList = dmd.getGuild().getChannelsByName(webhookChannelName);
 			for (ServerChannel serverChannel : channelList) {
 				if (serverChannel instanceof ServerTextChannel) {
@@ -97,6 +129,7 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         	stc = (ServerTextChannel)dmd.getChannel();
         	serverName += "#" + stc.getName();
         }
+
         for (User user : dmd.getGuild().getMembers()) {
         	if (user.isBot()) {
         		// botはスルー
@@ -109,6 +142,20 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         			continue;
         		}
     		}
+    		if (role != null) {
+    			List<Role> roles = user.getRoles(dmd.getGuild());
+    			boolean roleFlag = false;
+    			for (Role userRole : roles) {
+					if (role.equals(userRole)) {
+						roleFlag = true;
+						break;
+					}
+				}
+    			if (!roleFlag) {
+    				continue;
+    			}
+    		}
+
 
 			String userIdName = user.getIdAsString() + ":" +
 					user.getNickname(dmd.getGuild()).orElse(user.getDisplayName(dmd.getGuild()));
@@ -121,8 +168,15 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         	return;
         }
 
+        String roleId = null;
+        if (role != null) {
+        	roleId = role.getIdAsString();
+        	guildId += "&" + roleId;
+        	serverName += "(" + roleName + ")";
+        }
+
 		Map<String, Object> result = CsmpService.getInstance().createScheduleAdjustment(
-				guildId, serverName, webhookUrl, authorIdName, userIdNameList
+				guildId, serverName, webhookUrl, authorIdName, userIdNameList, roleId
 				);
 		if (result == null) {
 			dmd.getChannel().sendMessage("エラーが発生しました。再度コマンドを実行してください。");
@@ -166,6 +220,11 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 		list.add(new CommandHelpData("/スケジュールforCh <通知先チャンネル名>",
 				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
 				"作成したページURLが通知先チャンネルに通知される。（通知先チャンネル名がtestなら 「/スケジュールforCh test」）"
+				));
+		list.add(new CommandHelpData("/スケジュール -role <ロール名>",
+				"日程調整用のページを作成する。",
+				"ロール名で指定したロールを持つユーザのみを参加者として登録する。「-role <ロール名>」は他のコマンドとの組み合わせも可能。"
+				+ "-role以降は一番最後に指定する。「/スケジュールforCh <通知先チャンネル名> -role <ロール名>」など。"
 				));
 
 		return new CommandHelpData(list);

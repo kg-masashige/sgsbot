@@ -124,7 +124,7 @@ public class CsmpService extends BaseService {
 	 * 日程調整ページ作成.
 	 */
 	public Map<String, Object> createScheduleAdjustment(String guildId, String serverName, String webhook, String authorIdName,
-			List<String> userIdNameList) {
+			List<String> userIdNameList, String roleId) {
 
 		try {
 			if (!checkGuildId(guildId)) {
@@ -143,6 +143,9 @@ public class CsmpService extends BaseService {
 			form.param("authorIdName", authorIdName);
 			for (String userIdName : userIdNameList) {
 				form.param("userIdNames", userIdName);
+			}
+			if (roleId != null) {
+				form.param("roleId", roleId);
 			}
 
 			String result = post(registerUrl, Entity.form(form));
