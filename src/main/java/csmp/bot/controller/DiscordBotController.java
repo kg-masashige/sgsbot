@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.util.logging.ExceptionLogger;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.command.help.HelpCommand;
@@ -23,12 +24,23 @@ public class DiscordBotController {
 	private String token;
 
 	/**
+	 * シャード数
+	 */
+	private int totalShards = 1;
+
+	/**
+	 * ログインメッセージ
+	 */
+	private String joinMessage = "";
+
+	/**
 	 * コンストラクタ.
 	 * @param classList コマンド配列
 	 * @param token Discord botトークン
 	 */
-	public DiscordBotController(List<Class<? extends IDiscordCommand>> classList, String token) {
+	public DiscordBotController(List<Class<? extends IDiscordCommand>> classList, String token, int totalShards) {
 		this.token = token;
+		this.totalShards = totalShards;
 		commandList = new ArrayList<>();
 		List<IDiscordCommand> commandListForHelp = new ArrayList<>();
 		for (Class<? extends IDiscordCommand> clazz : classList) {
@@ -47,13 +59,26 @@ public class DiscordBotController {
 		commandList.addAll(commandListForHelp);
 	}
 
+	public DiscordBotController(List<Class<? extends IDiscordCommand>> classList, String token) {
+		this(classList, token, 1);
+	}
+
 	/**
 	 * 実行メソッド.
 	 */
 	public void execute(String joinMessage) {
-		System.out.println("Botを起動中...");
-		DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
+		this.joinMessage = joinMessage;
+		new DiscordApiBuilder().setToken(token)
+				.setTotalShards(totalShards)
+				.loginAllShards()
+	            .forEach(shardFuture -> shardFuture
+	                    .thenAcceptAsync(this::onShardLogin)
+	                    .exceptionally(ExceptionLogger.get())
+	                );
+	}
 
+	private void onShardLogin(DiscordApi api) {
+		System.out.println("Botを起動中... shard:" + api.getCurrentShard());
 		api.addMessageCreateListener(event -> {
 			DiscordMessageData dmd = new DiscordMessageData(event);
 
@@ -83,7 +108,7 @@ public class DiscordBotController {
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
 				.ifPresent(channel -> channel.sendMessage(joinMessage)));
 
-		System.out.println("Botの起動完了.");
+		System.out.println("Botの起動完了. shard:" + api.getCurrentShard());
 
 	}
 
