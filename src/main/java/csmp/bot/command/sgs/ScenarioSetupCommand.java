@@ -35,7 +35,7 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 		if (dmd.getGuild() == null) {
 			return false;
 		}
-		if (dmd.getText().startsWith("/sgss ") || dmd.getText().startsWith("/sgread ")) {
+		if (dmd.getText().startsWith("/sgss ") || dmd.getText().startsWith("/sgsread ")) {
 			return true;
 		}
 		return false;
