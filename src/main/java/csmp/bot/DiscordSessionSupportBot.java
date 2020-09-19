@@ -19,6 +19,8 @@ import csmp.bot.command.sgs.ScenarioClearCommand;
 import csmp.bot.command.sgs.ScenarioSendSecretCommand;
 import csmp.bot.command.sgs.ScenarioSetupCommand;
 import csmp.bot.controller.DiscordBotController;
+import csmp.bot.event.IDiscordEvent;
+import csmp.bot.event.schedule.ScheduleMemberChangeEvent;
 
 public class DiscordSessionSupportBot {
 
@@ -38,7 +40,6 @@ public class DiscordSessionSupportBot {
 		scheduleClassList.add(ScheduleAddCommand.class);
 		scheduleClassList.add(ScheduleDeleteCommand.class);
 		scheduleClassList.add(ScheduleShowCommand.class);
-		scheduleClassList.add(ScheduleCreateCommand.class);
 
 		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
 		bcDiceBotClassList.add(PlotOpenCommand.class);
@@ -48,14 +49,20 @@ public class DiscordSessionSupportBot {
 		bcDiceBotClassList.add(BcDiceGetSystemInfoCommand.class);
 		bcDiceBotClassList.add(BcDiceRollCommand.class);
 
+		List<Class<? extends IDiscordCommand>> daycordList = new ArrayList<>();
+		daycordList.add(ScheduleCreateCommand.class);
+
+		List<Class<? extends IDiscordEvent>> daycordEventList = new ArrayList<>();
+		daycordEventList.add(ScheduleMemberChangeEvent.class);
 
 		String sgsToken = System.getenv("DISCORD_BOT_TOKEN");
 		List<Class<? extends IDiscordCommand>> sgsExecList = new ArrayList<>();
 		sgsExecList.addAll(sgsClassList);
 		sgsExecList.addAll(scheduleClassList);
 		sgsExecList.addAll(bcDiceBotClassList);
+		sgsExecList.addAll(daycordList);
 
-		DiscordBotController sgsBot = new DiscordBotController(sgsExecList, sgsToken);
+		DiscordBotController sgsBot = new DiscordBotController(sgsExecList, daycordEventList, sgsToken);
 		sgsBot.execute("TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
 				+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
 				+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。");
@@ -68,9 +75,7 @@ public class DiscordSessionSupportBot {
 			shardCount = Integer.valueOf(daycordShards);
 		}
 
-		List<Class<? extends IDiscordCommand>> daycordList = new ArrayList<>();
-		daycordList.add(ScheduleCreateCommand.class);
-		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordToken, shardCount);
+		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordEventList, daycordToken, shardCount);
 		daycordBot.execute("デイコードはDiscordと連携して日程調整ができるサービスです。\n"
 				+ "「/スケジュール」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
 				+ "チャンネル参加者ごとで別々にスケジュール調整ページを作りたい場合は「/スケジュールforCh」と入力してください。\n"

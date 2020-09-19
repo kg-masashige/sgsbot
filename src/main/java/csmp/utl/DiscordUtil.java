@@ -1,9 +1,17 @@
 package csmp.utl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.permission.PermissionState;
+import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.permission.Permissions;
+import org.javacord.api.entity.permission.Role;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
 
@@ -18,7 +26,6 @@ public class DiscordUtil {
 	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc) {
 		return getWebhookUrl(dmd, tc, 0);
 	}
-
 
 	private static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc, int count) {
 
@@ -49,4 +56,42 @@ public class DiscordUtil {
 
 		return webhookUrl;
 	}
+
+	public static Map<String, String> getMemberIdMap(Server guild, ServerTextChannel stc, Role role) {
+		Map<String, String> userMap = new HashMap<>();
+
+        for (User user : guild.getMembers()) {
+        	if (user.isBot()) {
+        		// botはスルー
+        		continue;
+        	}
+    		if (stc != null) {
+        		Permissions permissions = stc.getEffectivePermissions(user);
+        		if (permissions.getState(PermissionType.READ_MESSAGES) == PermissionState.DENIED) {
+        			// 読み込み権限がなければスルー
+        			continue;
+        		}
+    		}
+    		if (role != null) {
+    			List<Role> roles = user.getRoles(guild);
+    			boolean roleFlag = false;
+    			for (Role userRole : roles) {
+					if (role.equals(userRole)) {
+						roleFlag = true;
+						break;
+					}
+				}
+    			if (!roleFlag) {
+    				continue;
+    			}
+    		}
+
+    		userMap.put(user.getIdAsString(),
+    				user.getNickname(guild).orElse(user.getDisplayName(guild)));
+		}
+
+        return userMap;
+
+	}
+
 }

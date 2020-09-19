@@ -3,14 +3,12 @@ package csmp.bot.command.schedule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
-import org.javacord.api.entity.permission.PermissionState;
-import org.javacord.api.entity.permission.PermissionType;
-import org.javacord.api.entity.permission.Permissions;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 
@@ -27,7 +25,7 @@ import csmp.utl.DiscordUtil;
  */
 public class ScheduleCreateCommand implements IDiscordCommand {
 
-	private static int MAX_USER_SIZE = 50;
+	public static int MAX_USER_SIZE = 50;
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -120,8 +118,6 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         }
         String authorIdName = author.getIdAsString() + ":" + authorName;
 
-        List<String> userIdNameList = new ArrayList<>();
-
         ServerTextChannel stc = null;
         if (dmd.getText().equals("/スケジュールforCh")
     		&& dmd.getChannel() instanceof ServerTextChannel) {
@@ -130,36 +126,10 @@ public class ScheduleCreateCommand implements IDiscordCommand {
         	serverName += "#" + stc.getName();
         }
 
-        for (User user : dmd.getGuild().getMembers()) {
-        	if (user.isBot()) {
-        		// botはスルー
-        		continue;
-        	}
-    		if (stc != null) {
-        		Permissions permissions = stc.getEffectivePermissions(user);
-        		if (permissions.getState(PermissionType.READ_MESSAGES) == PermissionState.DENIED) {
-        			// 読み込み権限がなければスルー
-        			continue;
-        		}
-    		}
-    		if (role != null) {
-    			List<Role> roles = user.getRoles(dmd.getGuild());
-    			boolean roleFlag = false;
-    			for (Role userRole : roles) {
-					if (role.equals(userRole)) {
-						roleFlag = true;
-						break;
-					}
-				}
-    			if (!roleFlag) {
-    				continue;
-    			}
-    		}
-
-
-			String userIdName = user.getIdAsString() + ":" +
-					user.getNickname(dmd.getGuild()).orElse(user.getDisplayName(dmd.getGuild()));
-			userIdNameList.add(userIdName);
+        Map<String,String> memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), stc, role);
+        List<String> userIdNameList = new ArrayList<>();
+        for (Entry<String, String> entry : memberMap.entrySet()) {
+			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
 		}
 
         if (userIdNameList.size() > MAX_USER_SIZE) {

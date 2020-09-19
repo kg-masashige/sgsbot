@@ -167,6 +167,39 @@ public class CsmpService extends BaseService {
 	}
 
 	/**
+	 * ギルドIDに紐づくスケジュールメンバーのマップを取得する.
+	 * @param guildId
+	 * @return
+	 */
+	public Map<String, Object> getScheduleMemberIdMap(String guildId) {
+		String registerUrl = csmpUrl + "/schedule/memberList";
+		Form form = new Form();
+		form.param("guildId", guildId);
+		String result = post(registerUrl, Entity.form(form));
+
+		if (result != null) {
+			Map<String, Object> map = JSON.decode(result);
+			if ("ok".equals(map.get("result"))) {
+				Map<String, Object> sessionMap = (Map<String, Object>)map.get("sessionMap");
+				return sessionMap;
+
+			}
+		}
+
+		return null;
+
+	}
+
+	public void updateScheduleMembers(Map<String, Map<String, List<String>>> updateSessionMap) {
+		String registerUrl = csmpUrl + "/schedule/updateScheduleMembers";
+		Form form = new Form();
+		form.param("data", JSON.encode(updateSessionMap));
+		post(registerUrl, Entity.form(form));
+		// 更新に失敗しても通知はしない。
+	}
+
+
+	/**
 	 * セッション予定日削除.
 	 * @param guildId ギルドID
 	 * @param dates カンマ区切りの日付
