@@ -167,6 +167,54 @@ public class CsmpService extends BaseService {
 	}
 
 	/**
+	 * スケジュールの紐付け.
+	 * @param guildId
+	 * @param webhookUrl
+	 * @param authorIdName
+	 * @param roleId
+	 * @param linkKey
+	 * @return
+	 */
+	public Map<String, Object> linkScheduleAdjustment(String guildId, String webhook, String authorIdName,
+			String roleId, String linkKey) {
+		try {
+			if (!checkGuildId(guildId)) {
+				Map<String, Object> map = new HashMap<>();
+				map.put("result", "ng");
+				map.put("error", "複数のデイコードが同時に動作しているため、処理を中断しました。");
+
+				return map;
+			}
+
+			String registerUrl = csmpUrl + "/schedule/link";
+			Form form = new Form();
+			form.param("guildId", guildId);
+			form.param("webhook", webhook);
+			form.param("authorIdName", authorIdName);
+			form.param("linkKey", linkKey);
+			if (roleId != null) {
+				form.param("roleId", roleId);
+			}
+
+			String result = post(registerUrl, Entity.form(form));
+
+			if (result != null) {
+				Map<String, Object> map = JSON.decode(result);
+				if (map.containsKey("key")) {
+					map.put("url", csmpUrl + "schedule/edit?key=" + map.get("key"));
+				}
+
+				return map;
+			}
+
+		} finally {
+			removeGuildId(guildId);
+		}
+
+		return null;
+	}
+
+	/**
 	 * ギルドIDに紐づくスケジュールメンバーのマップを取得する.
 	 * @param guildId
 	 * @return
