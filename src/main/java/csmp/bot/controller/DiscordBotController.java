@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.util.logging.ExceptionLogger;
 
 import csmp.bot.command.IDiscordCommand;
@@ -92,7 +93,9 @@ public class DiscordBotController {
 	 */
 	public void execute(String joinMessage) {
 		this.joinMessage = joinMessage;
+
 		new DiscordApiBuilder().setToken(token)
+				.setAllIntentsExcept(Intent.GUILD_PRESENCES)
 				.setTotalShards(totalShards)
 				.loginAllShards()
 	            .forEach(shardFuture -> shardFuture

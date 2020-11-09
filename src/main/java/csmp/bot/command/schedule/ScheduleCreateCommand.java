@@ -137,11 +137,6 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
         Map<String,String> memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), stc, role);
 
-        // TODO Discord障害が解消されるまで、オーナーのID、名前を設定しておく。
-        if (memberMap.isEmpty()) {
-        	memberMap.put(author.getIdAsString(), authorName);
-        }
-
         List<String> userIdNameList = new ArrayList<>();
         for (Entry<String, String> entry : memberMap.entrySet()) {
 			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
