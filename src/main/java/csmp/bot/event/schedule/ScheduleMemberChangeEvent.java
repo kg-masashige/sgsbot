@@ -40,6 +40,11 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 		// デイコードから情報を取得する。
 		String guildId = ded.getGuild().getIdAsString();
 
+		// TODO Discord障害が修正されるまで機能を止める
+		if (guildId != null) {
+			return;
+		}
+
 		if (!checkGuildId(guildId)) {
 			return;
 		}
