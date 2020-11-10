@@ -113,6 +113,11 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 			}
 
 			Map<String, String> currentMemberIdMap = DiscordUtil.getMemberIdMap(ded.getGuild(), stc, role);
+			if (currentMemberIdMap.isEmpty()) {
+				// 現在のメンバーIDマップが取得できない場合、何もせずに終える。
+				return updateSessionMap;
+			}
+
 			Map<String, String> serverMemberIdMap = (Map<String, String>) entry.getValue();
 			List<String> updateMemberIdNameList = new ArrayList<>();
 			List<String> deleteMemberIdList = new ArrayList<>();

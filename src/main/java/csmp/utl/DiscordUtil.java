@@ -44,8 +44,9 @@ public class DiscordUtil {
 			if (count < 5) {
 				return getWebhookUrl(dmd, tc, count + 1);
 			} else {
-				dmd.getChannel().sendMessage("webhookの管理ができませんでした。");
-				e.printStackTrace();
+				dmd.getChannel().sendMessage("webhookの作成・取得ができませんでした。権限設定を見直してください。");
+				System.err.println("webhook作成エラー guild id:" +
+						dmd.getGuild().getIdAsString() + "guild name:" + dmd.getGuild().getName());
 				return null;
 			}
 		}
