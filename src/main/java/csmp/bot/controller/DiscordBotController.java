@@ -95,7 +95,14 @@ public class DiscordBotController {
 		this.joinMessage = joinMessage;
 
 		new DiscordApiBuilder().setToken(token)
-				.setAllIntentsExcept(Intent.GUILD_PRESENCES)
+				.setIntents(
+						Intent.DIRECT_MESSAGES,
+						Intent.GUILDS,
+						Intent.GUILD_MESSAGES,
+						Intent.GUILD_MEMBERS,
+						Intent.GUILD_WEBHOOKS,
+						Intent.GUILD_INTEGRATIONS
+						)
 				.setTotalShards(totalShards)
 				.loginAllShards()
 	            .forEach(shardFuture -> shardFuture
