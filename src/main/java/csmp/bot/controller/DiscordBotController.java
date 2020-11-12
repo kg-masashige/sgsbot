@@ -85,7 +85,7 @@ public class DiscordBotController {
 	}
 
 	public DiscordBotController(List<Class<? extends IDiscordCommand>> messageTriggerList, List<Class<? extends IDiscordEvent>> eventTriggerList, String token) {
-		this(messageTriggerList, eventTriggerList, token, 1);
+		this(messageTriggerList, eventTriggerList, token, 0);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class DiscordBotController {
 	public void execute(String joinMessage) {
 		this.joinMessage = joinMessage;
 
-		new DiscordApiBuilder().setToken(token)
+		DiscordApiBuilder apiBuilder = new DiscordApiBuilder().setToken(token)
 				.setIntents(
 						Intent.DIRECT_MESSAGES,
 						Intent.GUILDS,
@@ -102,9 +102,14 @@ public class DiscordBotController {
 						Intent.GUILD_MEMBERS,
 						Intent.GUILD_WEBHOOKS,
 						Intent.GUILD_INTEGRATIONS
-						)
-				.setTotalShards(totalShards)
-				.loginAllShards()
+						);
+		if (totalShards == 0) {
+			apiBuilder = apiBuilder.setRecommendedTotalShards().join();
+		} else {
+			apiBuilder = apiBuilder.setTotalShards(totalShards);
+
+		}
+			apiBuilder.loginAllShards()
 	            .forEach(shardFuture -> shardFuture
 	                    .thenAcceptAsync(this::onShardLogin)
 	                    .exceptionally(ExceptionLogger.get())
@@ -173,12 +178,12 @@ public class DiscordBotController {
 	}
 
 	private void handleError(DiscordEventData ded, Throwable e) {
-		System.out.println("error event:" + ded.getGuild().getIdAsString() + ":" + ded.getGuild().getName());
+		System.err.println("error event:" + ded.getGuild().getIdAsString() + ":" + ded.getGuild().getName());
 		e.printStackTrace();
 	}
 
 	private void handleError(DiscordMessageData dmd, Throwable e) {
-		System.out.println("error command:" + dmd.getText());
+		System.err.println("error command:" + dmd.getText());
 		e.printStackTrace();
 		dmd.getChannel().sendMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
 	}

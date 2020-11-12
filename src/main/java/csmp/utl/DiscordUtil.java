@@ -46,7 +46,7 @@ public class DiscordUtil {
 			} else {
 				dmd.getChannel().sendMessage("webhookの作成・取得ができませんでした。権限設定を見直してください。");
 				System.err.println("webhook作成エラー guild id:" +
-						dmd.getGuild().getIdAsString() + "guild name:" + dmd.getGuild().getName());
+						dmd.getGuild().getIdAsString() + " guild name:" + dmd.getGuild().getName());
 				return null;
 			}
 		}

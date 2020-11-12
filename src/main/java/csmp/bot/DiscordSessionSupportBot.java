@@ -70,7 +70,7 @@ public class DiscordSessionSupportBot {
 		String daycordToken = System.getenv("DAYCORD_BOT_TOKEN");
 		String daycordShards = System.getenv("DAYCORD_SHARDS");
 
-		int shardCount = 1;
+		int shardCount = 0;
 		if(daycordShards != null && Pattern.matches("^[0-9]+$", daycordShards)) {
 			shardCount = Integer.valueOf(daycordShards);
 		}
