@@ -34,7 +34,17 @@ public class DiscordBotController {
 	/**
 	 * シャード数
 	 */
-	private int totalShards = 1;
+	private int totalShards = 0;
+
+	/**
+	 * キャッシュサイズ
+	 */
+	private int cacheSize = 50;
+
+	/**
+	 * キャッシュ保持期間
+	 */
+	private int cacheStorageTimeInSeconds = 12 * 60 * 60;
 
 	/**
 	 * ログインメッセージ
@@ -43,12 +53,12 @@ public class DiscordBotController {
 
 	/**
 	 * コンストラクタ.
-	 * @param messageTriggerList コマンド配列
+	 * @param messageTriggerList コマンドリスト
+	 * @param eventTriggerList イベントトリガーコマンドリスト
 	 * @param token Discord botトークン
 	 */
-	public DiscordBotController(List<Class<? extends IDiscordCommand>> messageTriggerList, List<Class<? extends IDiscordEvent>> eventTriggerList, String token, int totalShards) {
+	public DiscordBotController(List<Class<? extends IDiscordCommand>> messageTriggerList, List<Class<? extends IDiscordEvent>> eventTriggerList, String token) {
 		this.token = token;
-		this.totalShards = totalShards;
 		this.commandList = new ArrayList<>();
 		List<IDiscordCommand> commandListForHelp = new ArrayList<>();
 		for (Class<? extends IDiscordCommand> clazz : messageTriggerList) {
@@ -84,10 +94,6 @@ public class DiscordBotController {
 		}
 	}
 
-	public DiscordBotController(List<Class<? extends IDiscordCommand>> messageTriggerList, List<Class<? extends IDiscordEvent>> eventTriggerList, String token) {
-		this(messageTriggerList, eventTriggerList, token, 0);
-	}
-
 	/**
 	 * 実行メソッド.
 	 */
@@ -116,8 +122,34 @@ public class DiscordBotController {
 	                );
 	}
 
+	/**
+	 * @param cacheSize キャッシュサイズ
+	 */
+	public void setCacheSize(int cacheSize) {
+		this.cacheSize = cacheSize;
+	}
+
+	/**
+	 * @param cacheStorageTimeInSeconds キャッシュ保持期間（秒数）
+	 */
+	public void setCacheStorageTimeInSeconds(int cacheStorageTimeInSeconds) {
+		this.cacheStorageTimeInSeconds = cacheStorageTimeInSeconds;
+	}
+
+
+
+	/**
+	 * @param totalShards 合計シャード数
+	 */
+	public void setTotalShards(int totalShards) {
+		this.totalShards = totalShards;
+	}
+
 	private void onShardLogin(DiscordApi api) {
+
 		System.out.println("Botを起動中... shard:" + api.getCurrentShard());
+		api.setMessageCacheSize(cacheSize, cacheStorageTimeInSeconds);
+
 		api.addMessageCreateListener(event -> {
 			DiscordMessageData dmd = new DiscordMessageData(event);
 

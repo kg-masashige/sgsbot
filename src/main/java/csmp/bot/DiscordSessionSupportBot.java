@@ -2,7 +2,6 @@ package csmp.bot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.command.bcdice.BcDiceGetSystemInfoCommand;
@@ -67,15 +66,12 @@ public class DiscordSessionSupportBot {
 				+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
 				+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。");
 
+
 		String daycordToken = System.getenv("DAYCORD_BOT_TOKEN");
-		String daycordShards = System.getenv("DAYCORD_SHARDS");
+		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordEventList, daycordToken);
+		daycordBot.setCacheSize(0);
+		daycordBot.setCacheStorageTimeInSeconds(0);
 
-		int shardCount = 0;
-		if(daycordShards != null && Pattern.matches("^[0-9]+$", daycordShards)) {
-			shardCount = Integer.valueOf(daycordShards);
-		}
-
-		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordEventList, daycordToken, shardCount);
 		daycordBot.execute("デイコードはDiscordと連携して日程調整ができるサービスです。\n"
 				+ "「/スケジュール」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
 				+ "チャンネル参加者ごとで別々にスケジュール調整ページを作りたい場合は「/スケジュールforCh」と入力してください。\n"
