@@ -1,5 +1,6 @@
 package csmp.bot.command.sgs;
 
+import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.ServerTextChannelBuilder;
 import org.javacord.api.entity.permission.PermissionType;
@@ -29,6 +32,11 @@ import csmp.utl.DateUtil;
  *
  */
 public class ScenarioSetupCommand implements IDiscordCommand {
+
+	/**
+	 * ロガー
+	 */
+	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -71,7 +79,7 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 		String scenarioName = (String)((Map<String, Object>)secretMap.get("base")).get("name");
 		// シナリオ名のメッセージ出力
 		dmd.getChannel().sendMessage("シナリオ：" + scenarioName);
-		System.out.println("シナリオ名：" + scenarioName);
+		logger.info("シナリオ名：" + scenarioName);
 		if ("/sgsread".equals(dmd.getCommandArray()[0])) {
 			return;
 		}

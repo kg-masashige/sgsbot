@@ -1,5 +1,6 @@
 package csmp.bot.event.schedule;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.permission.Role;
 
@@ -34,6 +37,10 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 		guildExecutionMap.remove(guildId);
 	}
 
+	/**
+	 * ロガー
+	 */
+	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
 	@Override
 	public void execute(DiscordEventData ded) throws InterruptedException, ExecutionException {
@@ -54,7 +61,7 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 				if (updateSessionMap.isEmpty()) {
 					return;
 				}
-				System.out.println(updateSessionMap);
+				logger.info(updateSessionMap);
 				CsmpService.getInstance().updateScheduleMembers(updateSessionMap);
 
 				// 1回は追加で実施し、セッション情報との差異がないかのチェックを行う。

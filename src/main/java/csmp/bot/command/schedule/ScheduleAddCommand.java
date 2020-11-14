@@ -1,7 +1,11 @@
 package csmp.bot.command.schedule;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
@@ -17,6 +21,12 @@ import csmp.utl.DiscordUtil;
  */
 public class ScheduleAddCommand implements IDiscordCommand {
 
+	/**
+	 * ロガー
+	 */
+	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
+
+	
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
 		if (dmd.getGuild() == null) {
@@ -53,10 +63,10 @@ public class ScheduleAddCommand implements IDiscordCommand {
 		Map<String, Object> result = CsmpService.getInstance().registerSchedule(dmd.getGuild().getIdAsString(), webhookUrl, dateArray, messageText);
 		if (result != null) {
 			dmd.getChannel().sendMessage(dateArray + "を登録しました。");
-			System.out.println("サーバ：" + dmd.getGuild().getName() + "　登録日：" + dateArray);
+			logger.info("サーバ：" + dmd.getGuild().getName() + "　登録日：" + dateArray);
 		} else {
 			dmd.getChannel().sendMessage("予定日の登録に失敗しました。");
-			System.out.println("サーバ：" + dmd.getGuild().getName() + "　登録失敗：" + dateArray);
+			logger.info("サーバ：" + dmd.getGuild().getName() + "　登録失敗：" + dateArray);
 		}
 
 	}

@@ -1,8 +1,11 @@
 package csmp.bot.controller;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.intent.Intent;
@@ -52,12 +55,19 @@ public class DiscordBotController {
 	private String joinMessage = "";
 
 	/**
+	 * ロガー
+	 */
+	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
+
+	/**
 	 * コンストラクタ.
 	 * @param messageTriggerList コマンドリスト
 	 * @param eventTriggerList イベントトリガーコマンドリスト
 	 * @param token Discord botトークン
 	 */
 	public DiscordBotController(List<Class<? extends IDiscordCommand>> messageTriggerList, List<Class<? extends IDiscordEvent>> eventTriggerList, String token) {
+
+
 		this.token = token;
 		this.commandList = new ArrayList<>();
 		List<IDiscordCommand> commandListForHelp = new ArrayList<>();
@@ -147,7 +157,10 @@ public class DiscordBotController {
 
 	private void onShardLogin(DiscordApi api) {
 
-		System.out.println("Botを起動中... shard:" + api.getCurrentShard());
+		api.getApplicationInfo().thenAccept(info -> {
+			logger.info("Botを起動中... bot名:" + info.getName() + " shard:" + api.getCurrentShard());
+		});
+
 		api.setMessageCacheSize(cacheSize, cacheStorageTimeInSeconds);
 
 		api.addMessageCreateListener(event -> {
@@ -195,7 +208,9 @@ public class DiscordBotController {
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
 				.ifPresent(channel -> channel.sendMessage(joinMessage)));
 
-		System.out.println("Botの起動完了. shard:" + api.getCurrentShard());
+		api.getApplicationInfo().thenAccept(info -> {
+			logger.info("Botの起動完了. bot名:" + info.getName() + " shard:" + api.getCurrentShard());
+		});
 
 	}
 
@@ -210,13 +225,11 @@ public class DiscordBotController {
 	}
 
 	private void handleError(DiscordEventData ded, Throwable e) {
-		System.err.println("error event:" + ded.getGuild().getIdAsString() + ":" + ded.getGuild().getName());
-		e.printStackTrace();
+		logger.error("error event:" + ded.getGuild().getIdAsString() + ":" + ded.getGuild().getName(), e);
 	}
 
 	private void handleError(DiscordMessageData dmd, Throwable e) {
-		System.err.println("error command:" + dmd.getText());
-		e.printStackTrace();
+		logger.error("error command:" + dmd.getText(), e);
 		dmd.getChannel().sendMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
 	}
 

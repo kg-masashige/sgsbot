@@ -1,11 +1,14 @@
 package csmp.bot.command.schedule;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageAuthor;
@@ -26,6 +29,11 @@ import csmp.utl.DiscordUtil;
 public class ScheduleCreateCommand implements IDiscordCommand {
 
 	public static int MAX_USER_SIZE = 50;
+
+	/**
+	 * ロガー
+	 */
+	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -137,7 +145,7 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
         Map<String,String> memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), stc, role);
 
-        System.out.println("guildId:" + dmd.getGuild().getIdAsString() +
+        logger.info("guildId:" + dmd.getGuild().getIdAsString() +
 				" member count:" + memberMap.size() +
 				" shard num:" + dmd.getGuild().getApi().getCurrentShard());
 
