@@ -149,7 +149,6 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 				" member count:" + memberMap.size() +
 				" shard num:" + dmd.getGuild().getApi().getCurrentShard());
 
-        // Discord障害が解消されるまで、オーナーのID、名前を設定しておく。
         if (memberMap.isEmpty()) {
         	// メンバーの取得に失敗。再度コマンドを実行してもらうようにメッセージを送信。
         	dmd.getChannel().sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。");

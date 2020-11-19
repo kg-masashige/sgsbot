@@ -5,7 +5,7 @@
         <Property name="format1">%d{yyyy/MM/dd HH:mm:ss.SSS} [%t] %-6p %c{10} %m%n</Property>
     </Properties>
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
+        <Console name="Console">
             <PatternLayout>
                 <pattern>${format1}</pattern>
             </PatternLayout>
