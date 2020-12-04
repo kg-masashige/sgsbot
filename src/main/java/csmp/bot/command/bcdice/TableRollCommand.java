@@ -54,7 +54,7 @@ public class TableRollCommand implements IDiscordCommand {
 			explain = "";
 		}
 
-		String message = title + "(" + value + ") → " + explain.replaceAll("\\n", "\n");
+		String message = title + "(" + value + ") → " + explain.replaceAll("\\\\n", "\n");
 		dmd.getChannel().sendMessage(
 				new EmbedBuilder().setAuthor(dmd.getMessage().getMessageAuthor())
 					.addField(dmd.getText(), message)
