@@ -38,6 +38,10 @@ public class HelpCommand implements IDiscordCommand {
 	}
 
 	private String createCommandHelp(CommandHelpData helpData) {
+		if (helpData == null) {
+			return "";
+		}
+
 		if (helpData.getHelpList() != null) {
 			String helps = "";
 			for (CommandHelpData data : helpData.getHelpList()) {

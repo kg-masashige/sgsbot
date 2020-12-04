@@ -9,6 +9,8 @@ import csmp.bot.command.bcdice.BcDiceRollCommand;
 import csmp.bot.command.bcdice.BcDiceSearchSystemNameCommand;
 import csmp.bot.command.bcdice.BcDiceSetSystemCommand;
 import csmp.bot.command.bcdice.PlotOpenCommand;
+import csmp.bot.command.bcdice.TableRollCommand;
+import csmp.bot.command.bcdice.TableSetupCommand;
 import csmp.bot.command.character.LinkCharacterSheetCommand;
 import csmp.bot.command.schedule.ScheduleAddCommand;
 import csmp.bot.command.schedule.ScheduleCreateCommand;
@@ -41,11 +43,13 @@ public class DiscordSessionSupportBot {
 		scheduleClassList.add(ScheduleShowCommand.class);
 
 		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
+		bcDiceBotClassList.add(TableSetupCommand.class);
 		bcDiceBotClassList.add(PlotOpenCommand.class);
 		bcDiceBotClassList.add(LinkCharacterSheetCommand.class);
 		bcDiceBotClassList.add(BcDiceSearchSystemNameCommand.class);
 		bcDiceBotClassList.add(BcDiceSetSystemCommand.class);
 		bcDiceBotClassList.add(BcDiceGetSystemInfoCommand.class);
+		bcDiceBotClassList.add(TableRollCommand.class);
 		bcDiceBotClassList.add(BcDiceRollCommand.class);
 
 		List<Class<? extends IDiscordCommand>> daycordList = new ArrayList<>();

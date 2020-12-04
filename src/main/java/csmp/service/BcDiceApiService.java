@@ -24,6 +24,8 @@ public class BcDiceApiService extends BaseService {
 
 	private Map<Long, String> guildSystemInfo = new ConcurrentHashMap<>();
 
+	private Map<Long, Map<String, Map<String, Object>>> guildTableInfo = new ConcurrentHashMap<>();
+
 	public synchronized static BcDiceApiService getInstance() {
 		if (instance == null) {
 			instance = new BcDiceApiService();
@@ -35,6 +37,29 @@ public class BcDiceApiService extends BaseService {
 		if (bcDiceApiUrl == null) {
 			bcDiceApiUrl = System.getenv("BCDICEBOT_API_URL");
 			bcDiceApiUrl = bcDiceApiUrl.endsWith("/") ? bcDiceApiUrl : bcDiceApiUrl + "/";
+		}
+	}
+
+	/**
+	 * サーバ単位のテーブル情報を取得する.
+	 * @param guildId
+	 * @return
+	 */
+	public Map<String, Map<String, Object>> getTableInfo(long guildId) {
+		Map<String, Map<String, Object>> tableInfo = guildTableInfo.get(guildId);
+		return tableInfo;
+	}
+
+	/**
+	 * サーバ単位のテーブル情報を設定する.
+	 * @param guildId
+	 * @param tableInfo
+	 */
+	public void setTableInfo(long guildId, Map<String, Map<String, Object>> tableInfo) {
+		if (tableInfo == null) {
+			guildTableInfo.remove(guildId);
+		} else {
+			guildTableInfo.put(guildId, tableInfo);
 		}
 	}
 

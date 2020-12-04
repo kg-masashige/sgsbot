@@ -53,17 +53,24 @@ public class ScenarioSendSecretCommand implements IDiscordCommand {
 		if (secretName.toUpperCase().startsWith("PC")) {
 			for (Map<String, Object> map : pcList) {
 				String name = "PC" +CsmpService.text(map, "name");
-				if (secretName.equals(name)) {
+				if (secretName.equalsIgnoreCase(name)) {
 					textMessage = "■" + name + "の秘密：\r\n" + CsmpService.text(map, "secret");
 					break;
 				}
 			}
 		}
 		if (textMessage == null) {
+			String secretNameEdit = "";
+			if (secretName.toUpperCase().startsWith("NPC")) {
+				secretNameEdit = secretName.substring(3);
+			}
 			List<Map<String, Object>> npcList = (List<Map<String, Object>>)secretMap.get("npc");
+
 			for (Map<String, Object> map : npcList) {
 				String name =CsmpService.text(map, "name");
-				if (secretName.equals(name)) {
+
+				if (secretName.equalsIgnoreCase(name)
+						|| secretNameEdit.equalsIgnoreCase(name)) {
 					textMessage = "■" + name + "の秘密：\r\n" +CsmpService.text(map, "secret");
 					break;
 				}
