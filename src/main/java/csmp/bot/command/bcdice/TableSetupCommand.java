@@ -18,6 +18,9 @@ public class TableSetupCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		if ("/sgstable".equals(dmd.getCommandArray()[0])) {
 			return true;
 		}

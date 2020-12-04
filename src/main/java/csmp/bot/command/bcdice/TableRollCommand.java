@@ -19,6 +19,9 @@ public class TableRollCommand implements IDiscordCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
+		if (dmd.getGuild() == null) {
+			return false;
+		}
 		Map<String, Map<String, Object>> tableInfo = BcDiceApiService.getInstance().getTableInfo(dmd.getGuild().getId());
 		if (tableInfo == null) {
 			return false;
