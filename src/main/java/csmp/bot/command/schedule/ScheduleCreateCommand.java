@@ -28,8 +28,6 @@ import csmp.utl.DiscordUtil;
  */
 public class ScheduleCreateCommand implements IDiscordCommand {
 
-	public static int MAX_USER_SIZE = 50;
-
 	/**
 	 * ロガー
 	 */
@@ -159,12 +157,6 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
 		}
 
-        if (userIdNameList.size() > MAX_USER_SIZE) {
-        	dmd.getChannel().sendMessage("作成できるスケジュールは" + MAX_USER_SIZE + "人までです。\n"
-        			+ MAX_USER_SIZE + "人以下のチャンネルを作成して、/スケジュールforChコマンドで作成してください。");
-        	return;
-        }
-
         String roleId = null;
         if (role != null) {
         	roleId = role.getIdAsString();
@@ -221,11 +213,11 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 		List<CommandHelpData> list = new ArrayList<>();
 		list.add(new CommandHelpData("/スケジュール",
 				"日程調整用のページを作成する。",
-				"作成したページURLがチャンネルに通知される。サーバ内のユーザ数が" + MAX_USER_SIZE + "人を超えるとエラー。"
+				"作成したページURLがチャンネルに通知される。"
 				));
 		list.add(new CommandHelpData("/スケジュールforCh",
 				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
-				"コマンドは「/スケジュールforCh」固定。チャンネル内のユーザ数が" + MAX_USER_SIZE + "人を超えるとエラー。"
+				"コマンドは「/スケジュールforCh」固定。"
 				));
 		list.add(new CommandHelpData("/スケジュール <通知先チャンネル名>",
 				"日程調整用のページを作成する。",

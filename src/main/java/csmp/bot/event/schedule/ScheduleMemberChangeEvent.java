@@ -14,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.permission.Role;
 
-import csmp.bot.command.schedule.ScheduleCreateCommand;
 import csmp.bot.event.IDiscordEvent;
 import csmp.bot.model.DiscordEventData;
 import csmp.service.CsmpService;
@@ -86,6 +85,11 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 		Map<String, Map<String, List<String>>> updateSessionMap = new HashMap<>();
 		for (Entry<String, Object> entry : sessionMap.entrySet()) {
 			String id = entry.getKey();
+			int qIndex = id.indexOf("?");
+			if ( qIndex > 0) {
+				id = id.substring(0, qIndex);
+			}
+
 			String entryGuildId = null;
 			String channelId = null;
 			String roleId = null;
@@ -154,15 +158,10 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 				continue;
 			}
 
-			if (count > ScheduleCreateCommand.MAX_USER_SIZE) {
-				// 50人制限のため、変更を加えない。
-				continue;
-			}
-
 			Map<String, List<String>> updateMap = new HashMap<>();
 			updateMap.put("update", updateMemberIdNameList);
 			updateMap.put("delete", deleteMemberIdList);
-			updateSessionMap.put(id, updateMap);
+			updateSessionMap.put(entry.getKey(), updateMap);
 		}
 		return updateSessionMap;
 	}
