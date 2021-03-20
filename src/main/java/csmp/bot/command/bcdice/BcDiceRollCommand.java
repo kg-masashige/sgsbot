@@ -17,7 +17,7 @@ import csmp.service.BcDiceApiService;
  */
 public class BcDiceRollCommand implements IDiscordCommand {
 
-	private static Pattern pattern = Pattern.compile("[0-9a-zA-Z\\()<>=+-/*]+");
+	private static Pattern pattern = Pattern.compile("[0-9a-z\\()<>=+-/*]+|choice.*", Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {

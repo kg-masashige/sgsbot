@@ -7,10 +7,16 @@ import org.javacord.api.event.server.ServerEvent;
 
 public class DiscordEventData {
 
-	public DiscordEventData(ServerEvent event) {
+	public DiscordEventData(ServerEvent event, boolean addFlag) {
 		this.guild = event.getServer();
 		this.event = event;
+		this.addFlag = addFlag;
 	}
+
+	/**
+	 * 追加フラグ
+	 */
+	private boolean addFlag = false;
 
 	/**
 	 * ギルド.
@@ -53,6 +59,13 @@ public class DiscordEventData {
 	 */
 	public void setData(Map<String, Object> data) {
 		this.data = data;
+	}
+
+	/**
+	 * @return addFlag
+	 */
+	public boolean isAddFlag() {
+		return addFlag;
 	}
 
 }

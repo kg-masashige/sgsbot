@@ -29,7 +29,7 @@ public class HelpCommand implements IDiscordCommand {
 	}
 
 	public void setCommandList(List<IDiscordCommand> commandList) {
-		message = "■コマンド一覧（<>は除いて発言してください）\r\n";
+		message = "■コマンド一覧（<>は除いて発言してください。最初の「/」は「／」でもOKです。）\r\n";
 		message += createCommandHelp(getCommandHelpData());
 		for (IDiscordCommand command : commandList) {
 			CommandHelpData helpData = command.getCommandHelpData();

@@ -190,19 +190,19 @@ public class DiscordBotController {
 		});
 
 		api.addServerMemberJoinListener(event -> {
-			triggerEvent(new DiscordEventData(event));
+			triggerEvent(new DiscordEventData(event, true));
 		});
 		api.addServerMemberLeaveListener(event -> {
-			triggerEvent(new DiscordEventData(event));
+			triggerEvent(new DiscordEventData(event, false));
 		});
 		api.addServerChannelChangeOverwrittenPermissionsListener(event -> {
-			triggerEvent(new DiscordEventData(event));
+			triggerEvent(new DiscordEventData(event, false));
 		});
 		api.addUserRoleAddListener(event -> {
-			triggerEvent(new DiscordEventData(event));
+			triggerEvent(new DiscordEventData(event, true));
 		});
 		api.addUserRoleRemoveListener(event -> {
-			triggerEvent(new DiscordEventData(event));
+			triggerEvent(new DiscordEventData(event, false));
 		});
 
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()

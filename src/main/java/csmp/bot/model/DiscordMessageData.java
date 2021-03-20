@@ -86,6 +86,10 @@ public class DiscordMessageData {
 			if (content == null) {
 				content = "";
 			}
+			if (content.startsWith("／")) {
+				content = content.replace("／", "/");
+			}
+
 			text = content;
 		}
 

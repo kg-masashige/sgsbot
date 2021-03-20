@@ -160,7 +160,10 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 
 			Map<String, List<String>> updateMap = new HashMap<>();
 			updateMap.put("update", updateMemberIdNameList);
-			updateMap.put("delete", deleteMemberIdList);
+			if (!ded.isAddFlag()) {
+				// 追加フラグがtrueの場合は削除イベントを実行しない。
+				updateMap.put("delete", deleteMemberIdList);
+			}
 			updateSessionMap.put(entry.getKey(), updateMap);
 		}
 		return updateSessionMap;
