@@ -33,8 +33,9 @@ botを参加させたサーバで以下の通り発言してください。
 ![role_sample](https://user-images.githubusercontent.com/54463631/84027713-615a0980-a9ca-11ea-90c5-b8e7f164dfde.png)
 
 
-### セッション予定管理機能
+### セッション予定管理機能（削除予定）
 セッションの次回予定日を登録し、リマインドすることができます。
+→こちらの機能は「[デイコード](https://character-sheets.appspot.com/schedule/)」に統合するため、削除予定の機能となります。デイコードをご利用ください。
 
 botを参加させたサーバで以下の通り発言してください。
 
@@ -72,7 +73,7 @@ ShinobigamiScenarioSetupBOT
 
 
 ### ダイスボット機能
-どどんとふなどで採用されているBCDice機能を利用してダイスを振ることができます。
+各種オンラインセッションツールでで採用されているBCDice 3の機能を利用してダイスを振ることができます。
 
 セッション開始時や再開時に
 
@@ -133,9 +134,9 @@ BCDiceが振れるWebAPI。[MITライセンス](https://github.com/ysakasin/bcdi
 
 
 
-[どどんとふ公式鯖](https://dodontof.onlinesession.app/)
+[とあるTRPG鯖](https://onlinesession.app/bcdiceapi/)
 
-どどんとふ日本国内最大の公開サーバー。設置されているBCDice-APIを使用。
+色々なオープンソースのTRPG関連ツールを無償で提供しているサーバー。設置されているBCDice-APIを使用。
 
 
 [キャラクターシート倉庫](https://character-sheets.appspot.com/)
