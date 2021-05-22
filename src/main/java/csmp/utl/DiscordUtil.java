@@ -59,11 +59,7 @@ public class DiscordUtil {
 			}
 		}
 
-
-		String webhookUrl = "https://discordapp.com/api/webhooks/"
-				+ webhook.getIdAsString() + "/" + webhook.getToken().get();
-
-		return webhookUrl;
+		return webhook.asIncomingWebhook().get().getUrl().toString();
 	}
 
 	public static Map<String, String> getMemberIdMap(Server guild, ServerTextChannel stc, Role role) {
