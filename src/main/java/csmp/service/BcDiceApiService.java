@@ -2,10 +2,10 @@ package csmp.service;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import net.arnx.jsonic.JSON;
 
@@ -21,6 +21,8 @@ public class BcDiceApiService extends BaseService {
 	private String bcDiceApiUrl = null;
 
 	private Map<String, String> systemNamesMap = null;
+
+	private Map<String, Map<String, Object>> systemInfoMap = null;
 
 	private Map<Long, String> guildSystemInfo = new ConcurrentHashMap<>();
 
@@ -38,6 +40,9 @@ public class BcDiceApiService extends BaseService {
 			bcDiceApiUrl = System.getenv("BCDICEBOT_API_URL");
 			bcDiceApiUrl = bcDiceApiUrl.endsWith("/") ? bcDiceApiUrl : bcDiceApiUrl + "/";
 		}
+
+		systemInfoMap = new ConcurrentHashMap<>();
+		getSystemNames();
 	}
 
 	/**
@@ -93,10 +98,16 @@ public class BcDiceApiService extends BaseService {
 			system = "DiceBot";
 		}
 
-		String path = "v1/diceroll?";
-		path += "system=" + system;
+		// コマンドパターン判定
+		Map<String, Object> systemInfo = getSystemInfo(system);
+		Pattern pattern = (Pattern)systemInfo.get("bot_command_pattern");
+		if (pattern != null && !pattern.matcher(text).matches()) {
+			return null;
+		}
+
+		String path = "v2/game_system/" + system + "/roll?command=";
 		try {
-			path += "&command=" + URLEncoder.encode(text, "UTF-8");
+			path += URLEncoder.encode(text, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		};
@@ -106,20 +117,20 @@ public class BcDiceApiService extends BaseService {
 			return null;
 		}
 		Map<String, Object> map = JSON.decode(result);
-		return system + map.get("result");
+		return system + map.get("text");
 	}
 
 	public synchronized Map<String, String> getSystemNames() {
 		if (systemNamesMap == null) {
-			String path = "v1/names";
+			String path = "/v2/game_system";
 			String result = get(bcDiceApiUrl + path);
 
 			if (result != null) {
 				Map<String, Object> map = JSON.decode(result);
-				List<Map<String, String>> list = (List<Map<String, String>>)map.get("names");
-				Map<String, String> namesMap = new HashMap<>();
+				List<Map<String, String>> list = (List<Map<String, String>>)map.get("game_system");
+				Map<String, String> namesMap = new ConcurrentHashMap<>();
 				for (Map<String, String> entry : list) {
-					namesMap.put(entry.get("system"), entry.get("name"));
+					namesMap.put(entry.get("id"), entry.get("name"));
 				}
 				systemNamesMap = namesMap;
 			}
@@ -128,8 +139,13 @@ public class BcDiceApiService extends BaseService {
 		return systemNamesMap;
 	}
 
-	public synchronized String getSystemInfo(String system) {
-		String path = "v1/systeminfo?system=";
+	private Map<String, Object> getSystemInfo(String system) {
+		Map<String, Object> systemInfo = systemInfoMap.get(system);
+		if (systemInfo != null) {
+			return systemInfo;
+		}
+
+		String path = "v2/game_system/";
 		try {
 			path += URLEncoder.encode(system, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
@@ -137,16 +153,30 @@ public class BcDiceApiService extends BaseService {
 		};
 
 		String result = get(bcDiceApiUrl + path);
-
 		if (result != null) {
-			Map<String, Object> map = JSON.decode(result);
-			Map<String, String> systeminfo = (Map<String, String>)map.get("systeminfo");
-			if (systeminfo != null) {
-				return (String)systeminfo.get("info");
+			systemInfo = JSON.decode(result);
+			String commandPattern = (String)systemInfo.get("command_pattern");
+			if (commandPattern.contains("|\\d+B\\d+|") && !commandPattern.contains("|\\d+D\\d+|")) {
+				commandPattern = commandPattern.replace("|\\d+B\\d+|", "|\\d+[BD]\\d+|") + ".*";
 			}
-		}
+			try {
+				Pattern pattern = Pattern.compile(commandPattern, Pattern.CASE_INSENSITIVE);
+				systemInfo.put("bot_command_pattern", pattern);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
+
+			systemInfoMap.put(system, systemInfo);
+			return systemInfo;
+		}
 		return null;
+
+	}
+
+	public String getSystemInfoMessage(String system) {
+		Map<String, Object> systemInfo = systemInfoMap.get(system);
+		return (String)systemInfo.get("help_message");
 	}
 
 }

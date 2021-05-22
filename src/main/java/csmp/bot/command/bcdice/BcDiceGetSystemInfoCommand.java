@@ -59,7 +59,7 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand {
 			}
 		}
 
-		String systemInfo = bcDiceApi.getSystemInfo(targetSystem);
+		String systemInfo = bcDiceApi.getSystemInfoMessage(targetSystem);
 
 		dmd.getChannel().sendMessage("システム：" + systemNames.get(targetSystem) + "(" + targetSystem + ")\n"
 				+ systemInfo);
