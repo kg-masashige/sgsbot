@@ -175,7 +175,7 @@ public class BcDiceApiService extends BaseService {
 	}
 
 	public String getSystemInfoMessage(String system) {
-		Map<String, Object> systemInfo = systemInfoMap.get(system);
+		Map<String, Object> systemInfo = getSystemInfo(system);
 		return (String)systemInfo.get("help_message");
 	}
 
