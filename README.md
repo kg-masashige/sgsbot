@@ -150,9 +150,9 @@ BCDiceが振れるWebAPI。[MITライセンス](https://github.com/ysakasin/bcdi
 Discordとの通信で使用。[Apache License 2.0](https://github.com/Javacord/Javacord/blob/master/LICENSE)でライセンスされています。
 
 
-[RESTeasy](https://github.com/resteasy/Resteasy)
+[OkHttp](https://square.github.io/okhttp/)
 
-Dicebot、キャラクターシートへの連携で使用。[Apache License 2.0](https://github.com/resteasy/Resteasy/blob/master/License.html)でライセンスされています。
+Dicebot、キャラクターシートへの連携で使用。[Apache License 2.0](https://square.github.io/okhttp/#license)でライセンスされています。
 
 
 [JSONIC](https://github.com/hidekatsu-izuno/jsonic)

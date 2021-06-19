@@ -1,39 +1,84 @@
 package csmp.service;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public abstract class BaseService {
+	public static final MediaType POST = MediaType.get("text/plain; charset=utf-8");
 
 	protected String get(String url) {
-		return request(url, null);
+        Request request = new Request.Builder().url(url)
+                .get().build();
+        return doRequest(request);
 	}
 
-	protected String post(String url, Entity<Form> entity) {
-		return request(url, entity);
+	protected String authKey = null;
+
+	protected String post(String url, FormMap params) {
+        FormBody.Builder formBuilder = new FormBody.Builder();
+		for (Entry<String, List<String>> entry : params.get().entrySet()) {
+			for (String value : entry.getValue()) {
+				formBuilder.add(entry.getKey(), value);
+			}
+		}
+        FormBody formBody = formBuilder.build();
+
+        Request request = new Request.Builder().url(url)
+                .addHeader("Authorization", "Bearer " + authKey)
+        		.post(formBody).build();
+        return doRequest(request);
 	}
 
-	protected String request(String url, Entity<Form> entity) {
-		Client client = ClientBuilder.newClient();
+	private String doRequest(Request request) {
+		OkHttpClient client = new OkHttpClient();
+        try {
+			Response response = client.newCall(request).execute();
 
-		Builder request = client.target(url).request();
-		Response response;
-		if (entity != null) {
-			response = request.post(entity);
-		} else {
-			response = request.get();
+			if (!response.isSuccessful()) {
+				return null;
+			}
+			ResponseBody responseBody = response.body();
+
+			if (responseBody == null) {
+				return null;
+			}
+
+			return responseBody.string();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
 		}
 
-		String result = null;
-		if (response.getStatus() == 200) {
-			result = response.readEntity(String.class);
-		}
-		response.close();
-
-		return result;
 	}
+
+	protected class FormMap {
+		Map<String, List<String>> params = new HashMap<>();
+
+		public void put(String key, String value) {
+			List<String> list = params.get(key);
+			if (list == null) {
+				list = new ArrayList<>();
+				params.put(key, list);
+			}
+			list.add(value);
+		}
+
+		public Map<String, List<String>> get() {
+			return params;
+		}
+
+	}
+
 }

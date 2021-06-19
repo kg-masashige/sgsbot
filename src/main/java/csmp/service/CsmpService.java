@@ -5,9 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Form;
-
+import csmp.bot.model.ScheduleCommandData;
 import net.arnx.jsonic.JSON;
 
 public class CsmpService extends BaseService {
@@ -27,6 +25,9 @@ public class CsmpService extends BaseService {
 		if (csmpUrl == null) {
 			csmpUrl = System.getenv("CHARACTER_SHEETS_URL");
 			csmpUrl = csmpUrl.endsWith("/") ? csmpUrl : csmpUrl + "/";
+		}
+		if (authKey == null) {
+			authKey = System.getenv("CHARACTER_SHEETS_AUTHKEY");
 		}
 	}
 
@@ -52,7 +53,9 @@ public class CsmpService extends BaseService {
 			Map<String, Object> baseMap = (Map<String, Object>)map.get("base");
 			if (baseMap != null && "1".equals(baseMap.get("publicview"))) {
 				String openUrl = dispUrl.replace("display", "openSecret");
-				String secret = post(openUrl, Entity.form(new Form().param("pass", text(baseMap, "publicviewpass"))));
+				FormMap params = new FormMap();
+				params.put("pass", text(baseMap, "publicviewpass"));
+				String secret = post(openUrl, params);
 				Map<Object, Object> secretMap = JSON.decode(secret);
 
 				return secretMap;
@@ -89,13 +92,13 @@ public class CsmpService extends BaseService {
 	public Map<String, Object> registerSchedule(String guildId, String webhook, String dates, String message) {
 
 		String registerUrl = csmpUrl + "sgsbot/registerSchedule";
+		FormMap params = new FormMap();
+		params.put("guildId", guildId);
+		params.put("webhook", webhook);
+		params.put("dates", dates);
+		params.put("message", message);
 
-		String result = post(registerUrl, Entity.form(new Form()
-				.param("guildId", guildId)
-				.param("webhook", webhook)
-				.param("dates", dates)
-				.param("message", message)
-				));
+		String result = post(registerUrl, params);
 
 		if (result != null) {
 			return JSON.decode(result);
@@ -123,8 +126,13 @@ public class CsmpService extends BaseService {
 	/**
 	 * 日程調整ページ作成.
 	 */
-	public Map<String, Object> createScheduleAdjustment(String guildId, String serverName, String webhook, String authorIdName,
-			List<String> userIdNameList, String roleId) {
+	public Map<String, Object> createScheduleAdjustment(ScheduleCommandData data) {
+		String guildId = data.getGuildId();
+		String serverName = data.getServerName();
+		String webhook = data.getWebhook();
+		String authorIdName = data.getAuthorIdName();
+		List<String> userIdNameList = data.getUserIdNameList();
+		String roleId = data.getRoleId();
 
 		try {
 			if (!checkGuildId(guildId)) {
@@ -135,20 +143,23 @@ public class CsmpService extends BaseService {
 				return map;
 			}
 
-			String registerUrl = csmpUrl + "/schedule/create";
-			Form form = new Form();
-			form.param("guildId", guildId);
-			form.param("serverName", serverName);
-			form.param("webhook", webhook);
-			form.param("authorIdName", authorIdName);
+			String registerUrl = csmpUrl + "schedule/create";
+			FormMap params = new FormMap();
+			params.put("guildId", guildId);
+			params.put("serverName", serverName);
+			params.put("webhook", webhook);
+			params.put("authorIdName", authorIdName);
 			for (String userIdName : userIdNameList) {
-				form.param("userIdNames", userIdName);
+				params.put("userIdNames", userIdName);
 			}
 			if (roleId != null) {
-				form.param("roleId", roleId);
+				params.put("roleId", roleId);
+			}
+			if (data.isForce()) {
+				params.put("force", "true");
 			}
 
-			String result = post(registerUrl, Entity.form(form));
+			String result = post(registerUrl, params);
 
 			if (result != null) {
 				Map<String, Object> map = JSON.decode(result);
@@ -186,17 +197,17 @@ public class CsmpService extends BaseService {
 				return map;
 			}
 
-			String registerUrl = csmpUrl + "/schedule/link";
-			Form form = new Form();
-			form.param("guildId", guildId);
-			form.param("webhook", webhook);
-			form.param("authorIdName", authorIdName);
-			form.param("linkKey", linkKey);
+			String registerUrl = csmpUrl + "schedule/link";
+			FormMap params = new FormMap();
+			params.put("guildId", guildId);
+			params.put("webhook", webhook);
+			params.put("authorIdName", authorIdName);
+			params.put("linkKey", linkKey);
 			if (roleId != null) {
-				form.param("roleId", roleId);
+				params.put("roleId", roleId);
 			}
 
-			String result = post(registerUrl, Entity.form(form));
+			String result = post(registerUrl, params);
 
 			if (result != null) {
 				Map<String, Object> map = JSON.decode(result);
@@ -220,10 +231,10 @@ public class CsmpService extends BaseService {
 	 * @return
 	 */
 	public Map<String, Object> getScheduleMemberIdMap(String guildId) {
-		String registerUrl = csmpUrl + "/schedule/memberList";
-		Form form = new Form();
-		form.param("guildId", guildId);
-		String result = post(registerUrl, Entity.form(form));
+		String registerUrl = csmpUrl + "schedule/memberList";
+		FormMap params = new FormMap();
+		params.put("guildId", guildId);
+		String result = post(registerUrl, params);
 
 		if (result != null) {
 			Map<String, Object> map = JSON.decode(result);
@@ -239,10 +250,10 @@ public class CsmpService extends BaseService {
 	}
 
 	public void updateScheduleMembers(Map<String, Map<String, List<String>>> updateSessionMap) {
-		String registerUrl = csmpUrl + "/schedule/updateScheduleMembers";
-		Form form = new Form();
-		form.param("data", JSON.encode(updateSessionMap));
-		post(registerUrl, Entity.form(form));
+		String registerUrl = csmpUrl + "schedule/updateScheduleMembers";
+		FormMap params = new FormMap();
+		params.put("data", JSON.encode(updateSessionMap));
+		post(registerUrl, params);
 		// 更新に失敗しても通知はしない。
 	}
 
@@ -257,10 +268,11 @@ public class CsmpService extends BaseService {
 
 		String registerUrl = csmpUrl + "sgsbot/deleteSchedule";
 
-		String result = post(registerUrl, Entity.form(new Form()
-				.param("guildId", guildId)
-				.param("dates", dates)
-				));
+		FormMap params = new FormMap();
+		params.put("guildId", guildId);
+		params.put("dates", dates);
+
+		String result = post(registerUrl, params);
 
 		if (result != null) {
 			return JSON.decode(result);
@@ -278,10 +290,10 @@ public class CsmpService extends BaseService {
 	public Map<String, Object> getGuildScheduleInfo(String guildId) {
 
 		String registerUrl = csmpUrl + "sgsbot/listSchedule";
+		FormMap params = new FormMap();
+		params.put("guildId", guildId);
 
-		String result = post(registerUrl, Entity.form(new Form()
-				.param("guildId", guildId)
-				));
+		String result = post(registerUrl, params);
 
 		if (result != null) {
 			return JSON.decode(result);
@@ -302,10 +314,10 @@ public class CsmpService extends BaseService {
 
 		String key = getKey(sheetUrl);
 		if (key != null) {
-			String result = post(registerUrl, Entity.form(new Form()
-					.param("webhook", webhook)
-					.param("key", key)
-					));
+			FormMap params = new FormMap();
+			params.put("webhook", webhook);
+			params.put("key", key);
+			String result = post(registerUrl, params);
 
 			if (result != null) {
 				return JSON.decode(result);

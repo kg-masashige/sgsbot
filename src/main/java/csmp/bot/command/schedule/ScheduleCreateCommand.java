@@ -18,6 +18,7 @@ import org.javacord.api.entity.user.User;
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
+import csmp.bot.model.ScheduleCommandData;
 import csmp.service.CsmpService;
 import csmp.utl.DiscordUtil;
 
@@ -64,7 +65,8 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
 		if (dmd.getCommandArray().length > 1) {
 			if (!"-role".equals(dmd.getCommandArray()[1])
-					&& !"-link".equals(dmd.getCommandArray()[1])) {
+					&& !"-link".equals(dmd.getCommandArray()[1])
+					&& !"-force".equals(dmd.getCommandArray()[1])) {
 				webhookChannelName = dmd.getCommandArray()[1];
 			}
 			for (int i = 1; i < dmd.getCommandArray().length; i++) {
@@ -166,9 +168,26 @@ public class ScheduleCreateCommand implements IDiscordCommand {
 
         Map<String, Object> result = null;
         if (linkUrl == null) {
-    		result = CsmpService.getInstance().createScheduleAdjustment(
-    				guildId, serverName, webhookUrl, authorIdName, userIdNameList, roleId
-    				);
+        	ScheduleCommandData scheduleData = new ScheduleCommandData();
+        	scheduleData.setGuildId(guildId);
+        	scheduleData.setServerName(serverName);
+        	scheduleData.setWebhook(webhookUrl);
+        	scheduleData.setAuthorIdName(authorIdName);
+        	scheduleData.setUserIdNameList(userIdNameList);
+        	scheduleData.setRoleId(roleId);
+
+        	if ("-force".equals(dmd.getCommandArray()[dmd.getCommandArray().length - 1])) {
+        		// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
+        		User guildOwner = dmd.getGuild().getOwner().orElse(null);
+        		if (!author.getIdAsString().equals(guildOwner.getIdAsString())) {
+        			dmd.getChannel().sendMessage("-forceをつけて権限の上書きができるのは、Discordサーバの管理者だけです。");
+        			return;
+        		}
+        		scheduleData.setForce(true);
+
+        	}
+
+    		result = CsmpService.getInstance().createScheduleAdjustment(scheduleData);
         } else {
         	int keyStartIndex = linkUrl.indexOf("key=");
         	if (keyStartIndex < 0) {
