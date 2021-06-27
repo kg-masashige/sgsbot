@@ -42,13 +42,14 @@ public abstract class BaseService {
 
 	private String doRequest(Request request) {
 		OkHttpClient client = new OkHttpClient();
+		Response response = null;
+		ResponseBody responseBody = null;
         try {
-			Response response = client.newCall(request).execute();
-
+        	response = client.newCall(request).execute();
+			responseBody = response.body();
 			if (!response.isSuccessful()) {
 				return null;
 			}
-			ResponseBody responseBody = response.body();
 
 			if (responseBody == null) {
 				return null;
@@ -59,6 +60,15 @@ public abstract class BaseService {
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			if (responseBody != null) {
+				responseBody.close();
+			}
+
+			if (response != null) {
+				response.close();
+			}
+
 		}
 
 	}
