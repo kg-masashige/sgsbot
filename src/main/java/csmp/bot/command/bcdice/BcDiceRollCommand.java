@@ -1,7 +1,6 @@
 package csmp.bot.command.bcdice;
 
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
 
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 
@@ -17,18 +16,12 @@ import csmp.service.BcDiceApiService;
  */
 public class BcDiceRollCommand implements IDiscordCommand {
 
-	private static Pattern pattern = Pattern.compile("[0-9a-z\\()<>=+-/*]+|choice.*", Pattern.CASE_INSENSITIVE);
-
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
 		if (dmd.getGuild() == null) {
 			return false;
 		}
-		if (pattern.matcher(dmd.getCommandArray()[0]).matches()) {
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 
 	@Override
