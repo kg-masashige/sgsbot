@@ -63,8 +63,8 @@ public class DiscordSessionSupportBot {
 		List<Class<? extends IDiscordCommand>> sgsExecList = new ArrayList<>();
 		sgsExecList.addAll(sgsClassList);
 		sgsExecList.addAll(scheduleClassList);
-		sgsExecList.addAll(bcDiceBotClassList);
 		sgsExecList.addAll(daycordList);
+		sgsExecList.addAll(bcDiceBotClassList);
 
 		String daycordToken = System.getenv("DAYCORD_BOT_TOKEN");
 		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordEventList, daycordToken);
