@@ -109,6 +109,8 @@ public class DiscordUtil {
 			}
 			responder.setContent(message).respond();
 			return;
+		} else {
+			dmd.getChannel().sendMessage(message);
 		}
 	}
 
