@@ -3,6 +3,7 @@ package csmp.bot.command.sgs;
 import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionChoice;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
 import csmp.bot.command.IDiscordCommand;
@@ -172,15 +174,23 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 				SlashCommandOptionType.STRING, "シナリオシートurl",
 				"キャラクターシート倉庫に登録しているシナリオシートのURLを指定してください。", true);
 
-		SlashCommandOption readonly = SlashCommandOption.create(
-				SlashCommandOptionType.BOOLEAN, "読み込み専用",
-				"シナリオシートの読み込みだけ行い、チャンネルやロールの設定を行わない場合はtrueを指定してください。", false);
+		SlashCommandOption readonly = SlashCommandOption.createWithChoices(
+				SlashCommandOptionType.STRING, "読み込み専用",
+				"シナリオシートの読み込みだけを行い、チャンネルやロールの設定を行わない場合に指定してください。", false,
+				Arrays.asList(
+						SlashCommandOptionChoice.create("読み込み専用", ReadOnly.READONLY.name())
+						)
+				);
 
 		return new SlashCommandBuilder().setName(getCommandName())
 				.setDescription("シノビガミのシナリオシートを読み込み、PCごとのチャンネルとロールを作成し、秘密を配付します。")
 				.addOption(link)
 				.addOption(readonly)
 				;
+	}
+
+	public enum ReadOnly {
+		READONLY, NOT_READONLY
 	}
 
 	@Override
@@ -207,11 +217,13 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		// 読み込み専用オプション
 		SlashCommandInteractionOption readOnlyOption = optionMap.get("読み込み専用");
 		if (readOnlyOption != null) {
-			boolean readonly = readOnlyOption.getBooleanValue().orElse(false);
+			String readOnlyValue = readOnlyOption.getStringValue().orElse(null);
+			ReadOnly readOnly = ReadOnly.valueOf(readOnlyValue);
 
-			if (readonly) {
+			if (readOnly == ReadOnly.READONLY) {
 				commandText = "/sgsread ";
 			}
+
 		}
 
 		dmd.setText(commandText + url);

@@ -186,7 +186,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 				// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
 				User guildOwner = dmd.getGuild().getOwner().orElse(null);
 				if (!authorUser.getIdAsString().equals(guildOwner.getIdAsString())) {
-					DiscordUtil.sendMessage("強制作成ができるのは、Discordサーバの管理者だけです。", dmd);
+					DiscordUtil.sendMessage("権限上書きができるのは、Discordサーバの管理者だけです。", dmd);
 					return;
 				}
 				scheduleData.setForce(true);
@@ -278,9 +278,12 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 				SlashCommandOptionType.STRING, "紐付けurl",
 				"まだDiscordと紐付けていない日程調整用のページをこのチャンネルに紐付けたい場合にURLを指定してください。", false);
 
-		SlashCommandOption force = SlashCommandOption.create(
-				SlashCommandOptionType.BOOLEAN, "強制作成",
-				"他の人が作成した日程調整用のページを自分の権限で上書きしたい場合は指定してください。(サーバー管理者限定オプション）"
+		SlashCommandOption force = SlashCommandOption.createWithChoices(
+				SlashCommandOptionType.STRING, "権限上書き",
+				"他の人が作成した日程調整用のページを自分の権限で上書きしたい場合は指定してください。(サーバー管理者限定オプション）", false,
+				Arrays.asList(
+						SlashCommandOptionChoice.create("上書きする", CreateForce.FORCE.name())
+						)
 				);
 
 		return new SlashCommandBuilder().setName(getCommandName())
@@ -295,6 +298,10 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 
 	public enum CreateUnit {
 		CHANNEL, SERVER
+	}
+
+	public enum CreateForce {
+		FORCE, NOT_FORCE
 	}
 
 	@Override
@@ -351,10 +358,12 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			}
 		}
 
-		SlashCommandInteractionOption forceOption = optionMap.get("強制作成");
+		SlashCommandInteractionOption forceOption = optionMap.get("権限上書き");
 		if (forceOption != null) {
-			Boolean force = forceOption.getBooleanValue().orElse(false);
-			if (force) {
+			String createForceValue = forceOption.getStringValue().orElse(null);
+			CreateForce force = CreateForce.valueOf(createForceValue);
+
+			if (force == CreateForce.FORCE) {
 				commandText += " -force";
 			}
 		}
