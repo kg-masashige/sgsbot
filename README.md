@@ -7,7 +7,7 @@
 
 
 ## 使用方法
-１．[こちらのリンク](https://discordapp.com/oauth2/authorize?client_id=611880245707931648&permissions=8&scope=bot)から自分が管理しているサーバにbotを招待する。
+１．[こちらのリンク](https://discordapp.com/oauth2/authorize?client_id=611880245707931648&permissions=8&scope=bot%20applications.commands)から自分が管理しているサーバにbotを招待する。
 
 ２．/sgshelp と発言して使用方法を確認する。
 
