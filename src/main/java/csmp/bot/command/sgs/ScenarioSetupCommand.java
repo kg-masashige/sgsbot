@@ -19,8 +19,14 @@ import org.javacord.api.entity.permission.PermissionsBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.server.ServerUpdater;
+import org.javacord.api.interaction.SlashCommandBuilder;
+import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandInteractionOption;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionType;
 
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
@@ -31,7 +37,7 @@ import csmp.utl.DateUtil;
  * @author kgmas
  *
  */
-public class ScenarioSetupCommand implements IDiscordCommand {
+public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashCommand {
 
 	/**
 	 * ロガー
@@ -157,5 +163,63 @@ public class ScenarioSetupCommand implements IDiscordCommand {
 				"シナリオシートの情報を読み込んでチャンネル、権限を設定する。"));
 
 		return new CommandHelpData(list);
+	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		SlashCommandOption link = SlashCommandOption.create(
+				SlashCommandOptionType.STRING, "シナリオシートurl",
+				"キャラクターシート倉庫に登録しているシナリオシートのURLを指定してください。", true);
+
+		SlashCommandOption readonly = SlashCommandOption.create(
+				SlashCommandOptionType.STRING, "読み込み専用",
+				"シナリオシートの読み込みだけ行い、チャンネルやロールの設定を行わない場合はtrueを指定してください。", false);
+
+		return new SlashCommandBuilder().setName(getCommandName())
+				.setDescription("シノビガミのシナリオシートを読み込み、PCごとのチャンネルとロールを作成し、秘密を配付します。")
+				.addOption(link)
+				.addOption(readonly)
+				;
+	}
+
+	@Override
+	public String getCommandName() {
+		return "sgss";
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		SlashCommandInteraction interaction = dmd.getInteraction();
+		List<SlashCommandInteractionOption> options = interaction.getOptions();
+
+		String commandText = "";
+
+		Map<String, SlashCommandInteractionOption> optionMap = new HashMap<>();
+		for (SlashCommandInteractionOption option : options) {
+			optionMap.put(option.getName(), option);
+		}
+
+		// シナリオシートURL
+		SlashCommandInteractionOption urlOption = optionMap.get("シナリオシートurl");
+		String url = urlOption.getStringValue().orElse(null);
+
+		// 読み込み専用オプション
+		SlashCommandInteractionOption readOnlyOption = optionMap.get("読み込み専用");
+		if (readOnlyOption != null) {
+			boolean readonly = readOnlyOption.getBooleanValue().orElse(false);
+
+			if (readonly) {
+				commandText = "/sgsread ";
+			} else {
+				commandText = "/sgss ";
+			}
+		}
+
+		interaction.createFollowupMessageBuilder().setContent("シナリオのセットアップを開始します。").send();
+
+		dmd.setText(commandText + url);
+
+		execute(dmd);
+
 	}
 }

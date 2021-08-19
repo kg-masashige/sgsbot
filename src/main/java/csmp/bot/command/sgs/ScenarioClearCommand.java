@@ -7,8 +7,10 @@ import java.util.concurrent.ExecutionException;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
+import org.javacord.api.interaction.SlashCommandBuilder;
 
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
@@ -18,7 +20,7 @@ import csmp.service.CsmpService;
  * @author kgmas
  *
  */
-public class ScenarioClearCommand implements IDiscordCommand {
+public class ScenarioClearCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -77,6 +79,26 @@ public class ScenarioClearCommand implements IDiscordCommand {
 		return new CommandHelpData(
 				"/sgsclear",
 				"シナリオシートの情報、チャンネル、権限を削除する。");
+	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		return new SlashCommandBuilder().setName(getCommandName())
+				.setDescription("シナリオシートの情報、チャンネル、権限を削除します。")
+				;
+	}
+
+	@Override
+	public String getCommandName() {
+		return "sgsclear";
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		dmd.getInteraction().createFollowupMessageBuilder().setContent("シナリオ情報をクリアします。").send();
+
+		dmd.setText("/sgsclear");
+		execute(dmd);
 	}
 
 }

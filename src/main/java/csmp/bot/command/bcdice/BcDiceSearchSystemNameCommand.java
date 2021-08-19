@@ -7,7 +7,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import org.javacord.api.interaction.SlashCommandBuilder;
+import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandInteractionOption;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionType;
+
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
@@ -17,7 +24,7 @@ import csmp.service.BcDiceApiService;
  * @author kgmas
  *
  */
-public class BcDiceSearchSystemNameCommand implements IDiscordCommand {
+public class BcDiceSearchSystemNameCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -83,6 +90,39 @@ public class BcDiceSearchSystemNameCommand implements IDiscordCommand {
 		return new CommandHelpData(
 				"/search systemname <システム名の一部（ビガミ、shinobi）など>",
 				"ダイスボットで指定できるシステム名を検索する。（部分一致検索）");
+	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		SlashCommandOption systemName = SlashCommandOption.create(
+				SlashCommandOptionType.STRING, "システム名の一部",
+				"BCDiceのシステム名（ソード、シノビなど）を指定してください。（部分一致検索）", true);
+
+		return new SlashCommandBuilder().setName(getCommandName())
+				.setDescription("bcdicesetで指定するためのシステム名のフルネームを検索します。")
+				.addOption(systemName)
+				;
+	}
+
+	@Override
+	public String getCommandName() {
+		return "bcdicesearch";
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		SlashCommandInteraction interaction = dmd.getInteraction();
+		List<SlashCommandInteractionOption> options = interaction.getOptions();
+
+		String systemName = options.get(0).getStringValue().orElse("");
+
+		String commandText = "/search systemname " + systemName;
+
+		interaction.createFollowupMessageBuilder().setContent(systemName + "を検索します。").send();
+
+		dmd.setText(commandText);
+
+		execute(dmd);
 	}
 
 }

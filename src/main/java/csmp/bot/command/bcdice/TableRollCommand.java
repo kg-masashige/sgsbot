@@ -59,7 +59,7 @@ public class TableRollCommand implements IDiscordCommand {
 
 		String message = title + "(" + value + ") → " + explain.replaceAll("\\\\n", "\n");
 		dmd.getChannel().sendMessage(
-				new EmbedBuilder().setAuthor(dmd.getMessage().getMessageAuthor())
+				new EmbedBuilder().setAuthor(dmd.getUser())
 					.addField(dmd.getText(), message)
 				);
 	}

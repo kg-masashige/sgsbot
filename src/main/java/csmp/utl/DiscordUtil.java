@@ -43,7 +43,7 @@ public class DiscordUtil {
 			if (webhookList == null || webhookList.isEmpty()) {
 				webhook = new WebhookBuilder(tc)
 						.setName(dmd.getGuild().getApi().getApplicationInfo().get().getName())
-						.create().get();
+						.create().join();
 			} else {
 				webhook = webhookList.get(0);
 			}

@@ -1,10 +1,18 @@
 package csmp.bot.command.bcdice;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import org.javacord.api.interaction.SlashCommandBuilder;
+import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandInteractionOption;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionType;
+
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
@@ -14,7 +22,7 @@ import csmp.service.BcDiceApiService;
  * @author kgmas
  *
  */
-public class BcDiceSetSystemCommand implements IDiscordCommand {
+public class BcDiceSetSystemCommand implements IDiscordCommand, IDiscordSlashCommand {
 
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
@@ -79,6 +87,40 @@ public class BcDiceSetSystemCommand implements IDiscordCommand {
 		return new CommandHelpData(
 				"/set system <指定したいシステム名>",
 				"ダイスボットのシステム（クトゥルフ、シノビガミなど）を設定する。");
+	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		SlashCommandOption systemName = SlashCommandOption.create(
+				SlashCommandOptionType.STRING, "システム名",
+				"BCDiceのシステム名（ソード・ワールド2.5、シノビガミなど）を指定してください。", true);
+
+		return new SlashCommandBuilder().setName(getCommandName())
+				.setDescription("BCDiceで判定する際のシステム名を設定します。")
+				.addOption(systemName)
+				;
+	}
+
+	@Override
+	public String getCommandName() {
+		return "bcdiceset";
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		SlashCommandInteraction interaction = dmd.getInteraction();
+		List<SlashCommandInteractionOption> options = interaction.getOptions();
+
+		String systemName = options.get(0).getStringValue().orElse("");
+
+		String commandText = "/set system " + systemName;
+
+		interaction.createFollowupMessageBuilder().setContent(systemName + "を設定します。").send();
+
+		dmd.setText(commandText);
+
+		execute(dmd);
+
 	}
 
 }

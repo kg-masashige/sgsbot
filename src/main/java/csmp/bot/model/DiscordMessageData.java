@@ -6,7 +6,10 @@ import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.user.User;
+import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.event.message.MessageCreateEvent;
+import org.javacord.api.interaction.SlashCommandInteraction;
 
 public class DiscordMessageData {
 
@@ -14,10 +17,30 @@ public class DiscordMessageData {
 		this.message = event;
 	}
 
+	public DiscordMessageData(SlashCommandCreateEvent event) {
+		this.slashCommandEvent = event;
+		this.interaction = event.getSlashCommandInteraction();
+	}
+
+	/**
+	 * スラッシュコマンドイベント.
+	 */
+	private SlashCommandCreateEvent slashCommandEvent = null;
+
+	/**
+	 * インタラクション.
+	 */
+	private SlashCommandInteraction interaction = null;
+
 	/**
 	 * メッセージ.
 	 */
 	private MessageCreateEvent message = null;
+
+	/**
+	 * ユーザー
+	 */
+	private User user = null;
 
 	/**
 	 * テキスト.
@@ -49,8 +72,13 @@ public class DiscordMessageData {
 	 */
 	public TextChannel getChannel() {
 		if (channel == null) {
-			channel = message.getChannel();
+			if (message != null) {
+				channel = message.getChannel();
+			} else {
+				channel = getInteraction().getChannel().orElse(null);
+			}
 		}
+
 		return channel;
 	}
 
@@ -59,7 +87,11 @@ public class DiscordMessageData {
 	 */
 	public Server getGuild() {
 		if (guild == null) {
-			guild = message.getServer().orElse(null);
+			if (message != null) {
+				guild = message.getServer().orElse(null);
+			} else {
+				guild = getInteraction().getServer().orElse(null);
+			}
 		}
 		return guild;
 	}
@@ -97,6 +129,15 @@ public class DiscordMessageData {
 	}
 
 	/**
+	 * テキストの設定.
+	 * スラッシュコマンド時に設定する.
+	 * @param text
+	 */
+	public void setText(String text) {
+		this.text = text;
+	}
+
+	/**
 	 * メッセージの取得.
 	 * @return
 	 */
@@ -119,6 +160,28 @@ public class DiscordMessageData {
 		}
 
     	return Optional.ofNullable(category);
+	}
+
+	/**
+	 * @return interaction
+	 */
+	public SlashCommandInteraction getInteraction() {
+		return interaction;
+	}
+
+	/**
+	 * @return user
+	 */
+	public User getUser() {
+		if (user == null) {
+			if (message != null) {
+				user = message.getMessageAuthor().asUser().orElse(null);
+			} else {
+				user = getInteraction().getUser();
+			}
+		}
+
+		return user;
 	}
 
 }
