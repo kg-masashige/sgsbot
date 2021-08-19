@@ -45,15 +45,16 @@ public class LinkCharacterSheetCommand implements IDiscordCommand,IDiscordSlashC
 		String webhookUrl = DiscordUtil.getWebhookUrl(dmd);
 
 		if (webhookUrl == null) {
+			DiscordUtil.sendMessage("Webhookの作成に失敗しました。", dmd, false);
 			return;
 		}
 
 		Map<String, Object> result = CsmpService.getInstance().registerCharacterSheet(webhookUrl, sheetUrl);
 		if (result != null && "ok".equals(result.get("result"))) {
-			dmd.getChannel().sendMessage("キャラクターシートを登録しました。キャラクターシートでDRボタンを押してください。");
+			DiscordUtil.sendMessage("キャラクターシートを登録しました。キャラクターシートでDRボタンを押してください。", dmd);
 
 		} else {
-			dmd.getChannel().sendMessage("キャラクターシートの登録に失敗しました。再度コマンドを実行してください。");
+			DiscordUtil.sendMessage("キャラクターシートの登録に失敗しました。再度コマンドを実行してください。", dmd);
 
 		}
 
@@ -93,8 +94,6 @@ public class LinkCharacterSheetCommand implements IDiscordCommand,IDiscordSlashC
 		List<SlashCommandInteractionOption> options = interaction.getOptions();
 
 		String commandText = "/link " + options.get(0).getStringValue().orElse("");
-
-		interaction.createFollowupMessageBuilder().setContent("キャラクターシートの紐付けを行います。").send();
 
 		dmd.setText(commandText);
 

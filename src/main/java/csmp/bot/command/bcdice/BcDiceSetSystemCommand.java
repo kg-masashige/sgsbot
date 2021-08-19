@@ -16,6 +16,7 @@ import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
+import csmp.utl.DiscordUtil;
 
 /**
  * ダイスボットシステム設定コマンド.
@@ -85,7 +86,7 @@ public class BcDiceSetSystemCommand implements IDiscordCommand, IDiscordSlashCom
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"/set system <指定したいシステム名>",
+				"/bcdiceset <指定したいシステム名> (旧コマンド：/set system)",
 				"ダイスボットのシステム（クトゥルフ、シノビガミなど）を設定する。");
 	}
 
@@ -115,11 +116,15 @@ public class BcDiceSetSystemCommand implements IDiscordCommand, IDiscordSlashCom
 
 		String commandText = "/set system " + systemName;
 
-		interaction.createFollowupMessageBuilder().setContent(systemName + "を設定します。").send();
-
 		dmd.setText(commandText);
 
-		execute(dmd);
+		if (checkInput(dmd)) {
+			DiscordUtil.sendMessage(systemName + "を設定します。", dmd);
+			execute(dmd);
+		} else {
+			DiscordUtil.sendMessage(systemName + "が見つかりません。/bcdicesearchで正しいシステム名を検索して設定してください。", dmd);
+		}
+
 
 	}
 

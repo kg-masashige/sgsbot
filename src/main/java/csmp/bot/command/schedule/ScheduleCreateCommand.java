@@ -82,7 +82,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 					if (dmd.getCommandArray().length - 1 > i) {
 						roleName = dmd.getCommandArray()[i + 1];
 					} else {
-						dmd.getChannel().sendMessage("-roleの後にはロール名を指定してください。");
+						DiscordUtil.sendMessage("ロール名を指定してください。", dmd);
 						return;
 					}
 				}
@@ -90,7 +90,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 					if (dmd.getCommandArray().length - 1 > i) {
 						linkUrl = dmd.getCommandArray()[i + 1];
 					} else {
-						dmd.getChannel().sendMessage("-linkの後には紐付けたいデイコードのURLを指定してください。");
+						DiscordUtil.sendMessage("紐付けたいデイコードのURLを指定してください。", dmd);
 						return;
 					}
 				}
@@ -103,7 +103,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			if (!roles.isEmpty()) {
 				role = roles.get(0);
 			} else {
-				dmd.getChannel().sendMessage(roleName + "のロールが見つかりません。");
+				DiscordUtil.sendMessage(roleName + "のロールが見つかりません。", dmd);
 				return;
 			}
 		}
@@ -121,7 +121,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 				}
 			}
 			if (webhookUrl == null) {
-				dmd.getChannel().sendMessage(webhookChannelName + "のテキストチャンネルが見つかりません。");
+				DiscordUtil.sendMessage(webhookChannelName + "のテキストチャンネルが見つかりません。", dmd);
 			}
 
 		} else {
@@ -154,7 +154,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 
 		if (memberMap.isEmpty()) {
 			// メンバーの取得に失敗。再度コマンドを実行してもらうようにメッセージを送信。
-			dmd.getChannel().sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。");
+			DiscordUtil.sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。", dmd);
 			return;
 		}
 		List<String> userIdNameList = new ArrayList<>();
@@ -178,12 +178,15 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			scheduleData.setAuthorIdName(authorIdName);
 			scheduleData.setUserIdNameList(userIdNameList);
 			scheduleData.setRoleId(roleId);
+			if (dmd.getInteraction() != null) {
+				scheduleData.setSlashCommand(true);
+			}
 
 			if ("-force".equals(dmd.getCommandArray()[dmd.getCommandArray().length - 1])) {
 				// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
 				User guildOwner = dmd.getGuild().getOwner().orElse(null);
 				if (!authorUser.getIdAsString().equals(guildOwner.getIdAsString())) {
-					dmd.getChannel().sendMessage("-forceをつけて権限の上書きができるのは、Discordサーバの管理者だけです。");
+					DiscordUtil.sendMessage("強制作成ができるのは、Discordサーバの管理者だけです。", dmd);
 					return;
 				}
 				scheduleData.setForce(true);
@@ -194,7 +197,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 		} else {
 			int keyStartIndex = linkUrl.indexOf("key=");
 			if (keyStartIndex < 0) {
-				dmd.getChannel().sendMessage("入力されたURLがデイコードのURLではありません。");
+				DiscordUtil.sendMessage("入力されたURLがデイコードのURLではありません。", dmd);
 				return;
 			}
 
@@ -208,20 +211,17 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 		}
 
 		if (result == null) {
-			dmd.getChannel().sendMessage("エラーが発生しました。再度コマンドを実行してください。");
+			DiscordUtil.sendMessage("エラーが発生しました。再度コマンドを実行してください。", dmd);
 		} else if (!"ok".equals(result.get("result"))) {
-			dmd.getChannel().sendMessage(String.valueOf(result.get("error")));
+			DiscordUtil.sendMessage(String.valueOf(result.get("error")), dmd);
 		} else {
 			if (result.containsKey("url")) {
 
-				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力してください。\n"
-						+ "参加者の方は、候補日日程入力が終わった連絡を受けてから日程状況一覧＞各個人の日程入力ページへと移動し、入力してください。\n"
+				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力し、日程登録ボタンを押してください。\n"
+						+ "日程登録ボタンを押した際に日程状況一覧ページをDiscordへ通知することで、他の参加者に日程調整用のページを通知できます。\n"
 						+ "[候補日設定用URL](" + result.get("url") + " )";
-				if (webhookChannel != null) {
-					webhookChannel.sendMessage(message);
-				} else {
-					dmd.getChannel().sendMessage(message);
-				}
+
+				DiscordUtil.sendMessage(message, dmd);
 			}
 		}
 
@@ -234,6 +234,9 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		List<CommandHelpData> list = new ArrayList<>();
+		list.add((new CommandHelpData("/schedule",
+				"日程調整用のページを作成する。以下の/スケジュールで始まるコマンドは旧コマンド。")));
+
 		list.add(new CommandHelpData("/スケジュール",
 				"日程調整用のページを作成する。",
 				"作成したページURLがチャンネルに通知される。"));
@@ -302,10 +305,6 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 	@Override
 	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
 		SlashCommandInteraction interaction = dmd.getInteraction();
-		interaction.createFollowupMessageBuilder()
-        .setContent("デイコードのコマンドを受け付けました。")
-        .send();
-
 		List<SlashCommandInteractionOption> options = interaction.getOptions();
 
 		String commandText = "";

@@ -9,6 +9,7 @@ import csmp.bot.command.bcdice.BcDiceRollCommand;
 import csmp.bot.command.bcdice.BcDiceSearchSystemNameCommand;
 import csmp.bot.command.bcdice.BcDiceSetSystemCommand;
 import csmp.bot.command.bcdice.PlotOpenCommand;
+import csmp.bot.command.bcdice.PlotSetCommand;
 import csmp.bot.command.bcdice.TableRollCommand;
 import csmp.bot.command.bcdice.TableSetupCommand;
 import csmp.bot.command.character.LinkCharacterSheetCommand;
@@ -46,6 +47,7 @@ public class DiscordSessionSupportBot {
 		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
 		bcDiceBotClassList.add(TableSetupCommand.class);
 		bcDiceBotClassList.add(PlotOpenCommand.class);
+		bcDiceBotClassList.add(PlotSetCommand.class);
 		bcDiceBotClassList.add(LinkCharacterSheetCommand.class);
 		bcDiceBotClassList.add(BcDiceSearchSystemNameCommand.class);
 		bcDiceBotClassList.add(BcDiceSetSystemCommand.class);
@@ -72,10 +74,9 @@ public class DiscordSessionSupportBot {
 		daycordBot.setCacheStorageTimeInSeconds(0);
 
 		daycordBot.execute("デイコードはDiscordと連携して日程調整ができるサービスです。\n"
-				+ "「/スケジュール」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
-				+ "チャンネル参加者ごとで別々にスケジュール調整ページを作りたい場合は「/スケジュールforCh」と入力してください。\n"
-				+ "その他オプションは「/デイコードヘルプ」で確認してください。\r\n"
-				+ "もし「/」で始まるコマンドを発言した際にDiscordが震えて送信できない場合、「/」を「／」に変えて発言してみてください。");
+				+ "「/schedule」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
+				+ "詳細は https://character-sheets.appspot.com/schedule/ をご確認ください。\r\n"
+				+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。");
 
 		// ダイスボット初期化
 		BcDiceApiService.getInstance();
@@ -84,7 +85,7 @@ public class DiscordSessionSupportBot {
 		sgsBot.execute("TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
 				+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
 				+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。\r\n"
-				+ "「/」で始まるコマンドを発言した際にDiscordが震えて送信できない場合、「/」を「／」に変えて発言してみてください。");
+				+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。");
 
 
 	}

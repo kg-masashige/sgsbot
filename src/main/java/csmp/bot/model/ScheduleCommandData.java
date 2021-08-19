@@ -5,6 +5,11 @@ import java.util.List;
 public class ScheduleCommandData {
 
 	/**
+	 * スラッシュコマンド.
+	 */
+	private boolean slashCommand;
+
+	/**
 	 * ギルドID(サーバID)
 	 */
 	private String guildId;
@@ -115,5 +120,17 @@ public class ScheduleCommandData {
 	 */
 	public void setForce(boolean force) {
 		this.force = force;
+	}
+	/**
+	 * @return slashCommand
+	 */
+	public boolean isSlashCommand() {
+		return slashCommand;
+	}
+	/**
+	 * @param slashCommand セットする slashCommand
+	 */
+	public void setSlashCommand(boolean slashCommand) {
+		this.slashCommand = slashCommand;
 	}
 }

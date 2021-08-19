@@ -18,6 +18,7 @@ import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
+import csmp.utl.DiscordUtil;
 
 /**
  * シナリオ秘密送付コマンド.
@@ -50,7 +51,7 @@ public class ScenarioSendSecretCommand implements IDiscordCommand,IDiscordSlashC
 		Server guild = dmd.getGuild();
 		Map<Object, Object> secretMap = CsmpService.getInstance().getGuildScenarioInfo().get(guild.getId());
 		if (secretMap == null) {
-			dmd.getChannel().sendMessage("シナリオ情報が設定されていません。");
+			DiscordUtil.sendMessage("シナリオ情報が設定されていません。", dmd);
 			return;
 		}
 		String secretName = dmd.getCommandArray()[1];
@@ -84,23 +85,25 @@ public class ScenarioSendSecretCommand implements IDiscordCommand,IDiscordSlashC
 			}
 		}
 		if (textMessage == null) {
-			dmd.getChannel().sendMessage(secretName + "の秘密がシナリオ情報内に見つかりません。");
+			DiscordUtil.sendMessage(secretName + "の秘密がシナリオ情報内に見つかりません。", dmd);
 			return;
 		}
 		List<ServerTextChannel> list = guild.getTextChannelsByName(roleName.toLowerCase());
 		if (list.isEmpty()) {
-			dmd.getChannel().sendMessage(roleName + "のチャンネルがサーバ内に見つかりません。");
+			DiscordUtil.sendMessage(roleName + "のチャンネルがサーバ内に見つかりません。", dmd);
 			return;
 		} else {
 		}
 
 		list.get(0).sendMessage(textMessage);
 
+		DiscordUtil.sendMessage(roleName + "のチャンネルに" + secretName + "の秘密を送りました。", dmd, false);
+
 	}
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().sendMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。");
+		DiscordUtil.sendMessage("コマンドは「/sgssend <秘密名> <送る先のチャンネル名>」と入力してください。", dmd);
 	}
 
 	@Override
@@ -142,9 +145,7 @@ public class ScenarioSendSecretCommand implements IDiscordCommand,IDiscordSlashC
 
 		ServerChannel channel = options.get(1).getChannelValue().orElse(null);
 		if (channel == null) {
-			interaction.createFollowupMessageBuilder()
-	        .setContent("チャンネルが正しく指定できていません。")
-	        .send();
+			DiscordUtil.sendMessage("チャンネルが正しく指定できていません。", dmd);
 			return;
 		}
 
@@ -154,7 +155,6 @@ public class ScenarioSendSecretCommand implements IDiscordCommand,IDiscordSlashC
 
 		execute(dmd);
 
-		interaction.createFollowupMessageBuilder().setContent(channel.getName() + "に秘密を送付しました。").send();
 
 	}
 }

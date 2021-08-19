@@ -18,6 +18,7 @@ import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
+import csmp.utl.DiscordUtil;
 
 /**
  * ダイスボットシステム説明取得コマンド.
@@ -69,13 +70,13 @@ public class BcDiceSearchSystemNameCommand implements IDiscordCommand,IDiscordSl
 		}
 
 		if (resultList.isEmpty()) {
-			dmd.getChannel().sendMessage("指定された名前で見つかりませんでした。" + dmd.getCommandArray()[2]);
+			DiscordUtil.sendMessage("指定された名前で見つかりませんでした。" + dmd.getCommandArray()[2], dmd);
 		} else {
 			String message = "■システム名（検索結果）：\n";
 			for (String systemName : resultList) {
 				message += systemName + "\n";
 			}
-			dmd.getChannel().sendMessage(message);
+			DiscordUtil.sendMessage(message, dmd);
 		}
 
 	}
@@ -88,7 +89,7 @@ public class BcDiceSearchSystemNameCommand implements IDiscordCommand,IDiscordSl
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"/search systemname <システム名の一部（ビガミ、shinobi）など>",
+				"/bcdicesearch <システム名の一部（ビガミ、shinobi）など> (旧コマンド：/search systemname)",
 				"ダイスボットで指定できるシステム名を検索する。（部分一致検索）");
 	}
 
@@ -117,8 +118,6 @@ public class BcDiceSearchSystemNameCommand implements IDiscordCommand,IDiscordSl
 		String systemName = options.get(0).getStringValue().orElse("");
 
 		String commandText = "/search systemname " + systemName;
-
-		interaction.createFollowupMessageBuilder().setContent(systemName + "を検索します。").send();
 
 		dmd.setText(commandText);
 

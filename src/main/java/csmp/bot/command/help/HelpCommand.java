@@ -1,17 +1,22 @@
 package csmp.bot.command.help;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import org.javacord.api.interaction.SlashCommandBuilder;
 
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
+import csmp.utl.DiscordUtil;
 
 /**
  * ヘルプコマンド.
  * @author kgmas
  *
  */
-public class HelpCommand implements IDiscordCommand {
+public class HelpCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	private String message = "";
 
@@ -29,7 +34,7 @@ public class HelpCommand implements IDiscordCommand {
 	}
 
 	public void setCommandList(List<IDiscordCommand> commandList) {
-		message = "■コマンド一覧（<>は除いて発言してください。最初の「/」は「／」でもOKです。）\r\n";
+		message = "■コマンド一覧（<>は除いて実行してください。/を押してコマンド一覧が出てこない場合、botを承認し直す必要があります。）\r\n";
 		message += createCommandHelp(getCommandHelpData());
 		for (IDiscordCommand command : commandList) {
 			CommandHelpData helpData = command.getCommandHelpData();
@@ -66,7 +71,7 @@ public class HelpCommand implements IDiscordCommand {
 
 	@Override
 	public void execute(DiscordMessageData dmd) {
-		dmd.getChannel().sendMessage(message);
+		DiscordUtil.sendMessage(message, dmd);
 	}
 
 	@Override
@@ -77,5 +82,22 @@ public class HelpCommand implements IDiscordCommand {
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData("/sgshelp もしくは /デイコードヘルプ", "コマンド一覧の表示。");
 	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		return new SlashCommandBuilder().setName(getCommandName()).setDescription("ヘルプを表示します。");
+	}
+
+	@Override
+	public String getCommandName() {
+		return "sgshelp";
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		dmd.setText("/sgshelp");
+		execute(dmd);
+	}
+
 
 }

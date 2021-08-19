@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionState;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Permissions;
@@ -17,6 +18,7 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
+import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 
 import csmp.bot.model.DiscordMessageData;
 
@@ -97,6 +99,21 @@ public class DiscordUtil {
 
         return userMap;
 
+	}
+
+	public static void sendMessage(String message, DiscordMessageData dmd, boolean isEphemeral) {
+		if (dmd.getInteraction() != null) {
+			InteractionImmediateResponseBuilder responder = dmd.getInteraction().createImmediateResponder();
+			if (isEphemeral) {
+				responder = responder.setFlags(MessageFlag.EPHEMERAL);
+			}
+			responder.setContent(message).respond();
+			return;
+		}
+	}
+
+	public static void sendMessage(String message, DiscordMessageData dmd) {
+		sendMessage(message, dmd, true);
 	}
 
 }

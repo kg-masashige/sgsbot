@@ -16,6 +16,7 @@ import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
+import csmp.utl.DiscordUtil;
 
 /**
  * ダイスボットシステム説明取得コマンド.
@@ -69,17 +70,17 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand, IDiscordSlas
 
 		String systemInfo = bcDiceApi.getSystemInfoMessage(targetSystem);
 
-		dmd.getChannel().sendMessage("システム：" + systemNames.get(targetSystem) + "(" + targetSystem + ")\n"
-				+ systemInfo);
+		DiscordUtil.sendMessage("システム：" + systemNames.get(targetSystem) + "(" + targetSystem + ")\n"
+				+ systemInfo, dmd);
 
 	}
 
 	@Override
 	public void warning(DiscordMessageData dmd) {
 		if (dmd.getCommandArray().length >= 3) {
-			dmd.getChannel().sendMessage("指定されたシステムがダイスボットに存在しません。：" + dmd.getCommandArray()[2]);
+			DiscordUtil.sendMessage("指定されたシステムがダイスボットに存在しません。：" + dmd.getCommandArray()[2], dmd);
 		} else {
-			dmd.getChannel().sendMessage("「/get systeminfo 確認したいシステム名」で発言してください。");
+			DiscordUtil.sendMessage("「/get systeminfo 確認したいシステム名」で発言してください。", dmd);
 		}
 
 	}
@@ -87,7 +88,7 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand, IDiscordSlas
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"/get systeminfo <確認したいシステム名>",
+				"/bcdiceget <確認したいシステム名> (旧コマンド：/get systeminfo)",
 				"ダイスボットのシステム（クトゥルフ、シノビガミなど）のコマンド一覧を表示する。");
 	}
 
@@ -98,7 +99,7 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand, IDiscordSlas
 				"BCDiceのシステム名（ソード・ワールド2.5、シノビガミなど）を指定してください。", true);
 
 		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("指定したシステム名のコマンド一覧を表示します。")
+				.setDescription("指定したシステム名のコマンド一覧を自分だけに表示します。")
 				.addOption(systemName)
 				;
 	}
@@ -116,8 +117,6 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand, IDiscordSlas
 		String systemName = options.get(0).getStringValue().orElse("");
 
 		String commandText = "/get systeminfo " + systemName;
-
-		interaction.createFollowupMessageBuilder().setContent(systemName + "の情報を取得します。").send();
 
 		dmd.setText(commandText);
 

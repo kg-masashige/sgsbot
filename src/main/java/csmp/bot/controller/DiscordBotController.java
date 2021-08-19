@@ -13,7 +13,6 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandInteraction;
 import org.javacord.api.util.logging.ExceptionLogger;
 
 import csmp.bot.command.IDiscordCommand;
@@ -228,9 +227,6 @@ public class DiscordBotController {
 	    api.bulkOverwriteGlobalSlashCommands(builderList).join();
 
 		api.addSlashCommandCreateListener(event -> {
-			SlashCommandInteraction slashCommandInteraction = event.getSlashCommandInteraction();
-		    slashCommandInteraction.respondLater();
-
 		    // コマンドの判断と実行を行う。
 		    for (IDiscordCommand command : commandList) {
 				if (command instanceof IDiscordSlashCommand) {

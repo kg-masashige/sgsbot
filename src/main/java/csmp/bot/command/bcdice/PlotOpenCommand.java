@@ -7,8 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import org.javacord.api.entity.user.User;
+import org.javacord.api.interaction.SlashCommandBuilder;
+import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 
 import csmp.bot.command.IDiscordCommand;
+import csmp.bot.command.IDiscordSlashCommand;
 import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 
@@ -17,7 +20,7 @@ import csmp.bot.model.DiscordMessageData;
  * @author kgmas
  *
  */
-public class PlotOpenCommand implements IDiscordCommand {
+public class PlotOpenCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	private static Map<Long, Long> userMessageIdMap = new ConcurrentHashMap<>();
 
@@ -87,13 +90,52 @@ public class PlotOpenCommand implements IDiscordCommand {
 	public CommandHelpData getCommandHelpData() {
 		List<CommandHelpData> list = new ArrayList<>();
 		list.add(new CommandHelpData(
-				"/plot open",
-				"参加者がbotへ送ったダイレクトメッセージの最新をすべて公開する。"));
-		list.add(new CommandHelpData(
-				"/plot who",
-				"参加者のうち誰がプロットしているかを確認する。"));
+				"/openplot (旧コマンド：/plot open)",
+				"参加者がこのチャンネルでプロットした値を公開する。"));
 
 		return new CommandHelpData(list);
+	}
+
+	@Override
+	public SlashCommandBuilder entryCommand() {
+		return new SlashCommandBuilder().setName(getCommandName())
+				.setDescription("プロットされた値を公開します。");
+
+	}
+
+	@Override
+	public String getCommandName() {
+		return "openplot";
+	}
+
+	private static Map<Long, Map<Long, String>> plotMap = new ConcurrentHashMap<>();
+
+	public static synchronized void setPlot(long channelId, long userId, String message) {
+		Map<Long, String> map = plotMap.get(channelId);
+		if (map == null) {
+			map = new ConcurrentHashMap<>();
+			plotMap.put(channelId, map);
+		}
+		map.put(userId, message);
+	}
+
+	@Override
+	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+		Map<Long, String> map = plotMap.get(dmd.getChannel().getId());
+		InteractionImmediateResponseBuilder responder = dmd.getInteraction().createImmediateResponder();
+		if (map == null) {
+			responder.setContent("プロットされていません。").respond();
+			return;
+		}
+		responder.setContent("プロット値を公開します。").respond();
+
+		for (User user : dmd.getGuild().getMembers()) {
+			String message = map.get(user.getId());
+			if (message != null) {
+				dmd.getChannel().sendMessage(user.getNickname(dmd.getGuild()).orElse(user.getName()) + ":" + message);
+				plotMap.remove(user.getId());
+			}
+		}
 	}
 
 }

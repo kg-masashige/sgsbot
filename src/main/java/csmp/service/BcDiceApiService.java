@@ -100,6 +100,9 @@ public class BcDiceApiService extends BaseService {
 
 		// コマンドパターン判定
 		Map<String, Object> systemInfo = getSystemInfo(system);
+		if (systemInfo == null) {
+			return null;
+		}
 		Pattern pattern = (Pattern)systemInfo.get("bot_command_pattern");
 		if (pattern != null && !pattern.matcher(text).matches()) {
 			return null;

@@ -31,6 +31,7 @@ import csmp.bot.model.CommandHelpData;
 import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DateUtil;
+import csmp.utl.DiscordUtil;
 
 /**
  * シナリオ情報セットアップコマンド.
@@ -71,20 +72,20 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		Map<Long, Map<Object,Object>> guildScenarioInfo = csmpService.getGuildScenarioInfo();
 
 		if (guildScenarioInfo.containsKey(guild.getId())) {
-			dmd.getChannel().sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。");
+			DiscordUtil.sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。", dmd);
 			return;
 		}
 
 		// シナリオ情報取得
 		Map<Object, Object> secretMap = csmpService.getScenarioSheetInfo(dmd.getCommandArray()[1]);
 		if (secretMap == null) {
-			dmd.getChannel().sendMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。");
+			DiscordUtil.sendMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。", dmd);
 			return;
 		}
 		guildScenarioInfo.put(guild.getId(), secretMap);
 		String scenarioName = (String)((Map<String, Object>)secretMap.get("base")).get("name");
 		// シナリオ名のメッセージ出力
-		dmd.getChannel().sendMessage("シナリオ：" + scenarioName);
+		DiscordUtil.sendMessage("シナリオ：" + scenarioName, dmd, false);
 		logger.info("シナリオ名：" + scenarioName);
 		if ("/sgsread".equals(dmd.getCommandArray()[0])) {
 			return;
@@ -172,7 +173,7 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 				"キャラクターシート倉庫に登録しているシナリオシートのURLを指定してください。", true);
 
 		SlashCommandOption readonly = SlashCommandOption.create(
-				SlashCommandOptionType.STRING, "読み込み専用",
+				SlashCommandOptionType.BOOLEAN, "読み込み専用",
 				"シナリオシートの読み込みだけ行い、チャンネルやロールの設定を行わない場合はtrueを指定してください。", false);
 
 		return new SlashCommandBuilder().setName(getCommandName())
@@ -192,7 +193,7 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		SlashCommandInteraction interaction = dmd.getInteraction();
 		List<SlashCommandInteractionOption> options = interaction.getOptions();
 
-		String commandText = "";
+		String commandText = "/sgss ";
 
 		Map<String, SlashCommandInteractionOption> optionMap = new HashMap<>();
 		for (SlashCommandInteractionOption option : options) {
@@ -210,12 +211,8 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 
 			if (readonly) {
 				commandText = "/sgsread ";
-			} else {
-				commandText = "/sgss ";
 			}
 		}
-
-		interaction.createFollowupMessageBuilder().setContent("シナリオのセットアップを開始します。").send();
 
 		dmd.setText(commandText + url);
 

@@ -95,7 +95,7 @@ public class ScenarioClearCommand implements IDiscordCommand,IDiscordSlashComman
 
 	@Override
 	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		dmd.getInteraction().createFollowupMessageBuilder().setContent("シナリオ情報をクリアします。").send();
+		dmd.getInteraction().createImmediateResponder().setContent("シナリオ情報をクリアします。").respond();
 
 		dmd.setText("/sgsclear");
 		execute(dmd);

@@ -56,7 +56,7 @@ public class BcDiceRollCommand implements IDiscordCommand, IDiscordSlashCommand 
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"DiceBotコマンド(2D6など)",
+				"/roll DiceBotコマンド(2D6など) (旧コマンド：コマンドなし)",
 				"ダイスボットのコマンドを実行する。シークレットダイスは対応していない。");
 	}
 
@@ -86,7 +86,7 @@ public class BcDiceRollCommand implements IDiscordCommand, IDiscordSlashCommand 
 
 		String commandText = options.get(0).getStringValue().orElse("");
 
-		interaction.createFollowupMessageBuilder().setContent(commandText).send();
+		interaction.createImmediateResponder().setContent("判定:" + commandText).respond();
 
 		dmd.setText(commandText);
 

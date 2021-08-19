@@ -158,6 +158,9 @@ public class CsmpService extends BaseService {
 			if (data.isForce()) {
 				params.put("force", "true");
 			}
+			if (data.isSlashCommand()) {
+				params.put("slashCommand", "true");
+			}
 
 			String result = post(registerUrl, params);
 
