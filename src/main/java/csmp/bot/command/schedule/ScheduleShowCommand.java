@@ -36,6 +36,8 @@ public class ScheduleShowCommand implements IDiscordCommand {
 	@Override
 	public void execute(DiscordMessageData dmd) {
 
+		dmd.getChannel().sendMessage("このコマンドは削除予定機能です。2021年12月に削除します。引き続き日程調整を行いたい方はデイコードをご利用ください。");
+
 		Server guild = dmd.getGuild();
 		Map<String, Object> guildScheduleInfo = CsmpService.getInstance().getGuildScheduleInfo(guild.getIdAsString());
 		if (guildScheduleInfo == null) {
@@ -65,7 +67,7 @@ public class ScheduleShowCommand implements IDiscordCommand {
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
 				"/scheshow",
-				"登録済のセッション予定日を表示する。");
+				"登録済のセッション予定日を表示する。（2021年12月削除予定機能）");
 	}
 
 }

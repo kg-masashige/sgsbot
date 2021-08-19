@@ -26,7 +26,7 @@ public class ScheduleAddCommand implements IDiscordCommand {
 	 */
 	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
-	
+
 	@Override
 	public boolean judgeExecute(DiscordMessageData dmd) {
 		if (dmd.getGuild() == null) {
@@ -48,6 +48,8 @@ public class ScheduleAddCommand implements IDiscordCommand {
 
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
+
+		dmd.getChannel().sendMessage("このコマンドは削除予定機能です。2021年12月に削除します。引き続き日程調整を行いたい方はデイコードをご利用ください。");
 
 		String dateArray = DateUtil.toFormatDateArray(dmd.getCommandArray()[1]);
 		String messageText = "";
@@ -79,7 +81,7 @@ public class ScheduleAddCommand implements IDiscordCommand {
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData("/scheadd <日付> <リマインドメッセージ（オプション）>",
-				"セッション予定日になったらリマインドメッセージを飛ばす。",
+				"セッション予定日になったらリマインドメッセージを飛ばす。（2021年12月削除予定機能）",
 				"日付を指定する時はカンマ区切りで複数指定可能。例：/scheadd 9/1,9/2");
 	}
 
