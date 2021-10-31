@@ -39,16 +39,24 @@ public class DiscordUtil {
 
 	private static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc, int count) {
 
-		Webhook webhook;
+		Webhook webhook = null;
 		try {
-			List<Webhook> webhookList = tc.getWebhooks().get();
-			if (webhookList == null || webhookList.isEmpty()) {
+			List<Webhook> webhookList = tc.getWebhooks().join();
+			if (webhookList != null) {
+				for (Webhook webhookElement : webhookList) {
+					if (webhookElement.isIncomingWebhook()) {
+						webhook = webhookElement;
+						break;
+					}
+				}
+			}
+
+			if (webhook == null) {
 				webhook = new WebhookBuilder(tc)
 						.setName(dmd.getGuild().getApi().getApplicationInfo().get().getName())
 						.create().join();
-			} else {
-				webhook = webhookList.get(0);
 			}
+
 		} catch (InterruptedException | ExecutionException e) {
 			// リトライする
 			if (count < 5) {
