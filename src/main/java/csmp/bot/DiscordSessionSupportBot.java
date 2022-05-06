@@ -13,10 +13,7 @@ import csmp.bot.command.bcdice.PlotSetCommand;
 import csmp.bot.command.bcdice.TableRollCommand;
 import csmp.bot.command.bcdice.TableSetupCommand;
 import csmp.bot.command.character.LinkCharacterSheetCommand;
-import csmp.bot.command.schedule.ScheduleAddCommand;
 import csmp.bot.command.schedule.ScheduleCreateCommand;
-import csmp.bot.command.schedule.ScheduleDeleteCommand;
-import csmp.bot.command.schedule.ScheduleShowCommand;
 import csmp.bot.command.sgs.ScenarioClearCommand;
 import csmp.bot.command.sgs.ScenarioSendSecretCommand;
 import csmp.bot.command.sgs.ScenarioSetupCommand;
@@ -39,11 +36,6 @@ public class DiscordSessionSupportBot {
 		sgsClassList.add(ScenarioSendSecretCommand.class);
 		sgsClassList.add(ScenarioClearCommand.class);
 
-		List<Class<? extends IDiscordCommand>> scheduleClassList = new ArrayList<>();
-		scheduleClassList.add(ScheduleAddCommand.class);
-		scheduleClassList.add(ScheduleDeleteCommand.class);
-		scheduleClassList.add(ScheduleShowCommand.class);
-
 		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
 		bcDiceBotClassList.add(TableSetupCommand.class);
 		bcDiceBotClassList.add(PlotOpenCommand.class);
@@ -64,7 +56,6 @@ public class DiscordSessionSupportBot {
 		String sgsToken = System.getenv("DISCORD_BOT_TOKEN");
 		List<Class<? extends IDiscordCommand>> sgsExecList = new ArrayList<>();
 		sgsExecList.addAll(sgsClassList);
-		sgsExecList.addAll(scheduleClassList);
 		sgsExecList.addAll(daycordList);
 		sgsExecList.addAll(bcDiceBotClassList);
 

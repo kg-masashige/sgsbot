@@ -33,7 +33,7 @@ botを参加させたサーバで以下の通り発言してください。
 ![role_sample](https://user-images.githubusercontent.com/54463631/84027713-615a0980-a9ca-11ea-90c5-b8e7f164dfde.png)
 
 
-### セッション予定管理機能（削除予定）
+### セッション予定管理機能
 このbotは、「[デイコード](https://character-sheets.appspot.com/schedule/)」が内包されております。デイコードのコマンドをご利用ください。
 
 
