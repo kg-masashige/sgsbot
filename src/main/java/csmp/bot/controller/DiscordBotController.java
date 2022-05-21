@@ -224,7 +224,7 @@ public class DiscordBotController {
 				builderList.add(slashCommand.entryCommand());
 			}
 		}
-	    api.bulkOverwriteGlobalSlashCommands(builderList).join();
+	    api.bulkOverwriteGlobalApplicationCommands(builderList).join();
 
 		api.addSlashCommandCreateListener(event -> {
 		    // コマンドの判断と実行を行う。

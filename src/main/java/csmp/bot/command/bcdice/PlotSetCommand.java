@@ -4,11 +4,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionType;
+import org.javacord.api.interaction.callback.InteractionCallbackDataFlag;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.command.IDiscordSlashCommand;
@@ -64,9 +64,9 @@ public class PlotSetCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	@Override
 	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String message = dmd.getInteraction().getFirstOptionStringValue().orElse(null);
+		String message = dmd.getInteraction().getOptionStringValueByIndex(0).orElse(null);
 		PlotOpenCommand.setPlot(dmd.getChannel().getId(), dmd.getUser().getId(), message);
-		dmd.getInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).setContent(message + "をプロットしました。").respond();
+		dmd.getInteraction().createImmediateResponder().setFlags(InteractionCallbackDataFlag.EPHEMERAL).setContent(message + "をプロットしました。").respond();
 
 		User user = dmd.getUser();
 		dmd.getChannel().sendMessage(user.getNickname(dmd.getGuild()).orElse(user.getName()) + "がプロットしました。");

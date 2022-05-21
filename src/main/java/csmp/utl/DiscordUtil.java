@@ -4,12 +4,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionState;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Permissions;
@@ -19,6 +17,8 @@ import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.webhook.IncomingWebhook;
 import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
+import org.javacord.api.exception.MissingPermissionsException;
+import org.javacord.api.interaction.callback.InteractionCallbackDataFlag;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 
 import csmp.bot.model.DiscordMessageData;
@@ -31,15 +31,20 @@ public class DiscordUtil {
 	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
 	public static String getWebhookUrl(DiscordMessageData dmd) {
-		return getWebhookUrl(dmd, (ServerTextChannel)dmd.getChannel(), 0);
+		return getWebhookUrl(dmd, (ServerTextChannel)dmd.getChannel());
+	}
+
+	private static boolean isMissingPermissionsException(Throwable t) {
+		if (t instanceof MissingPermissionsException) {
+			return true;
+		}
+		if (t.getCause() != null) {
+			return isMissingPermissionsException(t.getCause());
+		}
+		return false;
 	}
 
 	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc) {
-		return getWebhookUrl(dmd, tc, 0);
-	}
-
-	private static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc, int count) {
-
 		IncomingWebhook webhook = null;
 		try {
 			List<Webhook> webhookList = tc.getWebhooks().join();
@@ -58,20 +63,18 @@ public class DiscordUtil {
 						.create().join();
 			}
 
-		} catch (InterruptedException | ExecutionException e) {
-			// リトライする
-			if (count < 5) {
-				return getWebhookUrl(dmd, tc, count + 1);
+			return webhook.getUrl().toString();
+		} catch (Exception e) {
+			logger.error("webhook作成エラー guild id:" +
+					dmd.getGuild().getIdAsString() + " guild name:" + dmd.getGuild().getName(), e);
+			if (isMissingPermissionsException(e)) {
+				sendMessage("webhookの作成・取得ができませんでした。権限設定を見直すか、別のチャンネルを作成して実施してください。", dmd, true);
 			} else {
-				dmd.getChannel().sendMessage("webhookの作成・取得ができませんでした。権限設定を見直してください。");
-				logger.error("webhook作成エラー guild id:" +
-						dmd.getGuild().getIdAsString() + " guild name:" + dmd.getGuild().getName());
-				return null;
+				sendMessage("予期せぬエラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。", dmd, true);
 			}
+
+			return null;
 		}
-
-
-		return webhook.getUrl().toString();
 	}
 
 	public static Map<String, String> getMemberIdMap(Server guild, ServerTextChannel stc, Role role) {
@@ -115,10 +118,13 @@ public class DiscordUtil {
 		if (dmd.getInteraction() != null) {
 			InteractionImmediateResponseBuilder responder = dmd.getInteraction().createImmediateResponder();
 			if (isEphemeral) {
-				responder = responder.setFlags(MessageFlag.EPHEMERAL);
+				responder = responder.setFlags(InteractionCallbackDataFlag.EPHEMERAL);
 			}
-			responder.setContent(message).respond();
-			return;
+			try {
+				responder.setContent(message).respond().join();
+			} catch (Exception e) {
+				dmd.getChannel().sendMessage(message + "\n\n※アプリケーションの応答に失敗したため、チャンネル向けメッセージで送付します。");
+			}
 		} else {
 			dmd.getChannel().sendMessage(message);
 		}
