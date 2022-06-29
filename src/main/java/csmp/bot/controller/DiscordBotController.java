@@ -2,16 +2,13 @@ package csmp.bot.controller;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.intent.Intent;
-import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.util.logging.ExceptionLogger;
 
@@ -229,22 +226,20 @@ public class DiscordBotController {
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
 				.ifPresent(channel -> channel.sendMessage(joinMessage)));
 
-		Map<String, SlashCommand> slashCommandMap = new HashMap<>();
-		List<SlashCommand> list = api.getGlobalSlashCommands().join();
-		for (SlashCommand command : list) {
-			slashCommandMap.put(command.getName(), command);
-		}
-
-
 		List<SlashCommandBuilder> builderList = new ArrayList<>();
 	    for (IDiscordCommand command : commandList) {
 			if (command instanceof IDiscordSlashCommand) {
 				IDiscordSlashCommand slashCommand = (IDiscordSlashCommand)command;
-				SlashCommandBuilder builder = slashCommand.entryCommand();
 				builderList.add(slashCommand.entryCommand());
 			}
 		}
-	    api.bulkOverwriteGlobalApplicationCommands(builderList).join();
+
+	    try {
+		    api.bulkOverwriteGlobalApplicationCommands(builderList).join();
+	    } catch (Exception e) {
+		    // FIXME スラッシュコマンドアップデートのエラー対処
+	    	e.printStackTrace();
+	    }
 
 		api.addSlashCommandCreateListener(event -> {
 		    // コマンドの判断と実行を行う。
