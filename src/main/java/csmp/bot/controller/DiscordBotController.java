@@ -60,6 +60,11 @@ public class DiscordBotController {
 	private String joinMessage = "";
 
 	/**
+	 * メッセージインテントのON/OFF
+	 */
+	private boolean isMessageIntent = true;
+
+	/**
 	 * ロガー
 	 */
 	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
@@ -111,18 +116,31 @@ public class DiscordBotController {
 
 	/**
 	 * 実行メソッド.
+	 *
+	 * @param joinMessage 接続時メッセージ
+	 * @param isMessageIntent MESSAGE_INTENTのON/OFF
 	 */
-	public void execute(String joinMessage) {
+	public void execute(String joinMessage, boolean isMessageIntent) {
 		this.joinMessage = joinMessage;
+		this.isMessageIntent = isMessageIntent;
 
-		DiscordApiBuilder apiBuilder = new DiscordApiBuilder().setToken(token)
-				.setIntents(
-						Intent.DIRECT_MESSAGES,
-						Intent.GUILDS,
-						Intent.GUILD_MESSAGES,
-						Intent.GUILD_MEMBERS,
-						Intent.GUILD_WEBHOOKS,
-						Intent.GUILD_INTEGRATIONS);
+		DiscordApiBuilder apiBuilder = new DiscordApiBuilder().setToken(token);
+		if (isMessageIntent) {
+			apiBuilder.setIntents(
+					Intent.DIRECT_MESSAGES,
+					Intent.GUILDS,
+					Intent.GUILD_MESSAGES,
+					Intent.GUILD_MEMBERS,
+					Intent.GUILD_WEBHOOKS,
+					Intent.GUILD_INTEGRATIONS);
+		} else {
+			apiBuilder.setIntents(
+					Intent.GUILDS,
+					Intent.GUILD_MEMBERS,
+					Intent.GUILD_WEBHOOKS,
+					Intent.GUILD_INTEGRATIONS);
+		}
+
 		if (totalShards == 0) {
 			apiBuilder = apiBuilder.setRecommendedTotalShards().join();
 		} else {
@@ -164,31 +182,33 @@ public class DiscordBotController {
 
 		api.setMessageCacheSize(cacheSize, cacheStorageTimeInSeconds);
 
-		api.addMessageCreateListener(event -> {
-			DiscordMessageData dmd = new DiscordMessageData(event);
+		if (isMessageIntent) {
+			api.addMessageCreateListener(event -> {
+				DiscordMessageData dmd = new DiscordMessageData(event);
 
-			try {
-				for (IDiscordCommand command : commandList) {
-					if (command.judgeExecute(dmd)) {
+				try {
+					for (IDiscordCommand command : commandList) {
+						if (command.judgeExecute(dmd)) {
 
-						if (command.checkInput(dmd)) {
-							try {
-								command.execute(dmd);
-							} catch (Throwable e) {
-								handleError(dmd, e);
+							if (command.checkInput(dmd)) {
+								try {
+									command.execute(dmd);
+								} catch (Throwable e) {
+									handleError(dmd, e);
+								}
+							} else {
+								command.warning(dmd);
 							}
-						} else {
-							command.warning(dmd);
+							break;
 						}
-						break;
 					}
+
+				} catch (Throwable e) {
+					handleError(dmd, e);
 				}
 
-			} catch (Throwable e) {
-				handleError(dmd, e);
-			}
-
-		});
+			});
+		}
 
 		api.addServerMemberJoinListener(event -> {
 			triggerEvent(new DiscordEventData(event, true));

@@ -31,53 +31,51 @@ public class DiscordSessionSupportBot {
 	 */
 	public static void main(String[] args) {
 
-		List<Class<? extends IDiscordCommand>> sgsClassList = new ArrayList<>();
-		sgsClassList.add(ScenarioSetupCommand.class);
-		sgsClassList.add(ScenarioSendSecretCommand.class);
-		sgsClassList.add(ScenarioClearCommand.class);
+		String startMessage = "デイコードはDiscordと連携して日程調整ができるサービスです。\n"
+				+ "「/schedule」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
+				+ "詳細は https://character-sheets.appspot.com/schedule/ をご確認ください。\r\n"
+				+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。";
 
-		List<Class<? extends IDiscordCommand>> bcDiceBotClassList = new ArrayList<>();
-		bcDiceBotClassList.add(TableSetupCommand.class);
-		bcDiceBotClassList.add(PlotOpenCommand.class);
-		bcDiceBotClassList.add(PlotSetCommand.class);
-		bcDiceBotClassList.add(LinkCharacterSheetCommand.class);
-		bcDiceBotClassList.add(BcDiceSearchSystemNameCommand.class);
-		bcDiceBotClassList.add(BcDiceSetSystemCommand.class);
-		bcDiceBotClassList.add(BcDiceGetSystemInfoCommand.class);
-		bcDiceBotClassList.add(TableRollCommand.class);
-		bcDiceBotClassList.add(BcDiceRollCommand.class);
+		List<Class<? extends IDiscordCommand>> botCommandClassList = new ArrayList<>();
+		if ("true".equals(System.getenv("DAYCORD_SERVICE"))) {
+			botCommandClassList.add(ScheduleCreateCommand.class);
+		}
+		if ("true".equals(System.getenv("DICEBOT_SERVICE"))) {
+			botCommandClassList.add(TableSetupCommand.class);
+			botCommandClassList.add(PlotOpenCommand.class);
+			botCommandClassList.add(PlotSetCommand.class);
+			botCommandClassList.add(LinkCharacterSheetCommand.class);
+			botCommandClassList.add(BcDiceSearchSystemNameCommand.class);
+			botCommandClassList.add(BcDiceSetSystemCommand.class);
+			botCommandClassList.add(BcDiceGetSystemInfoCommand.class);
+			botCommandClassList.add(TableRollCommand.class);
+			botCommandClassList.add(BcDiceRollCommand.class);
 
-		List<Class<? extends IDiscordCommand>> daycordList = new ArrayList<>();
-		daycordList.add(ScheduleCreateCommand.class);
+			botCommandClassList.addAll(botCommandClassList);
+			// ダイスボット初期化
+			BcDiceApiService.getInstance();
+		}
+		if ("true".equals(System.getenv("SHINOBIGAMI_SERVICE"))) {
+			botCommandClassList.add(ScenarioSetupCommand.class);
+			botCommandClassList.add(ScenarioSendSecretCommand.class);
+			botCommandClassList.add(ScenarioClearCommand.class);
+			botCommandClassList.addAll(botCommandClassList);
+			startMessage = "TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
+					+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
+					+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。\r\n"
+					+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。";
+		}
 
+		String token = System.getenv("DISCORD_BOT_TOKEN");
+		boolean isMessageIntent = "true".equals(System.getenv("MESSAGE_INTENT"));
 		List<Class<? extends IDiscordEvent>> daycordEventList = new ArrayList<>();
 		daycordEventList.add(ScheduleMemberChangeEvent.class);
 
-		String sgsToken = System.getenv("DISCORD_BOT_TOKEN");
-		List<Class<? extends IDiscordCommand>> sgsExecList = new ArrayList<>();
-		sgsExecList.addAll(sgsClassList);
-		sgsExecList.addAll(daycordList);
-		sgsExecList.addAll(bcDiceBotClassList);
-
-		String daycordToken = System.getenv("DAYCORD_BOT_TOKEN");
-		DiscordBotController daycordBot = new DiscordBotController(daycordList, daycordEventList, daycordToken);
+		DiscordBotController daycordBot = new DiscordBotController(botCommandClassList, daycordEventList, token);
 		daycordBot.setCacheSize(0);
 		daycordBot.setCacheStorageTimeInSeconds(0);
 
-		daycordBot.execute("デイコードはDiscordと連携して日程調整ができるサービスです。\n"
-				+ "「/schedule」と入力するだけで、簡単にスケジュール調整ページを作成することができます。\n"
-				+ "詳細は https://character-sheets.appspot.com/schedule/ をご確認ください。\r\n"
-				+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。");
-
-		// ダイスボット初期化
-		BcDiceApiService.getInstance();
-
-		DiscordBotController sgsBot = new DiscordBotController(sgsExecList, daycordEventList, sgsToken);
-		sgsBot.execute("TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
-				+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
-				+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。\r\n"
-				+ "「/」を入力した際にコマンドのサジェストが表示されない場合、上記のサイトからbotを導入し直してください。");
-
+		daycordBot.execute(startMessage, isMessageIntent);
 
 	}
 
