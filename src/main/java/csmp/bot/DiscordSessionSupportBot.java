@@ -51,7 +51,6 @@ public class DiscordSessionSupportBot {
 			botCommandClassList.add(TableRollCommand.class);
 			botCommandClassList.add(BcDiceRollCommand.class);
 
-			botCommandClassList.addAll(botCommandClassList);
 			// ダイスボット初期化
 			BcDiceApiService.getInstance();
 		}
@@ -59,7 +58,6 @@ public class DiscordSessionSupportBot {
 			botCommandClassList.add(ScenarioSetupCommand.class);
 			botCommandClassList.add(ScenarioSendSecretCommand.class);
 			botCommandClassList.add(ScenarioClearCommand.class);
-			botCommandClassList.addAll(botCommandClassList);
 			startMessage = "TRPGセッション（主にシノビガミ）を行うためのbotです。\r\n"
 					+ "「/sgshelp」で実行可能なコマンドを確認できます。\r\n"
 					+ "詳細は https://github.com/kg-masashige/sgsbot をご確認ください。\r\n"

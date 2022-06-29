@@ -237,7 +237,6 @@ public class DiscordBotController {
 	    try {
 		    api.bulkOverwriteGlobalApplicationCommands(builderList).join();
 	    } catch (Exception e) {
-		    // FIXME スラッシュコマンドアップデートのエラー対処
 	    	e.printStackTrace();
 	    }
 
