@@ -128,9 +128,9 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 				ServerTextChannelBuilder stcBuilder = new ServerTextChannelBuilder(guild)
 						.setName(roleName)
 						.addPermissionOverwrite(
-								guild.getEveryoneRole(), new PermissionsBuilder().setDenied(PermissionType.READ_MESSAGES).build())
+								guild.getEveryoneRole(), new PermissionsBuilder().setDenied(PermissionType.VIEW_CHANNEL).build())
 						.addPermissionOverwrite(
-								role, new PermissionsBuilder().setAllowed(PermissionType.READ_MESSAGES).build());
+								role, new PermissionsBuilder().setAllowed(PermissionType.VIEW_CHANNEL).build());
 
 				dmd.getCategory().ifPresent(category -> stcBuilder.setCategory(category));
 

@@ -8,6 +8,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionState;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Permissions;
@@ -18,7 +19,6 @@ import org.javacord.api.entity.webhook.IncomingWebhook;
 import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
 import org.javacord.api.exception.MissingPermissionsException;
-import org.javacord.api.interaction.callback.InteractionCallbackDataFlag;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
 
 import csmp.bot.model.DiscordMessageData;
@@ -87,7 +87,7 @@ public class DiscordUtil {
         	}
     		if (stc != null) {
         		Permissions permissions = stc.getEffectivePermissions(user);
-        		if (permissions.getState(PermissionType.READ_MESSAGES) == PermissionState.DENIED) {
+        		if (permissions.getState(PermissionType.VIEW_CHANNEL) == PermissionState.DENIED) {
         			// 読み込み権限がなければスルー
         			continue;
         		}
@@ -118,7 +118,7 @@ public class DiscordUtil {
 		if (dmd.getInteraction() != null) {
 			InteractionImmediateResponseBuilder responder = dmd.getInteraction().createImmediateResponder();
 			if (isEphemeral) {
-				responder = responder.setFlags(InteractionCallbackDataFlag.EPHEMERAL);
+				responder = responder.setFlags(MessageFlag.EPHEMERAL);
 			}
 			try {
 				responder.setContent(message).respond().join();
