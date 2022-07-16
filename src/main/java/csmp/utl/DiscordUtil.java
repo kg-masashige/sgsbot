@@ -31,7 +31,13 @@ public class DiscordUtil {
 	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
 	public static String getWebhookUrl(DiscordMessageData dmd) {
-		return getWebhookUrl(dmd, (ServerTextChannel)dmd.getChannel());
+		if (dmd.getChannel() instanceof ServerTextChannel) {
+			return getWebhookUrl(dmd, (ServerTextChannel)dmd.getChannel());
+		}
+		sendMessage("スケジュール作成のコマンドはテキストチャンネル内で実施してください。\n"
+				+ "スレッド内やボイスチャンネル内のチャットでは使用できません。", dmd, true);
+		return null;
+
 	}
 
 	private static boolean isMissingPermissionsException(Throwable t) {
@@ -61,6 +67,7 @@ public class DiscordUtil {
 				webhook = new WebhookBuilder(tc)
 						.setName(dmd.getGuild().getApi().getApplicationInfo().get().getName())
 						.create().join();
+
 			}
 
 			return webhook.getUrl().toString();
