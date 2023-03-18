@@ -314,63 +314,154 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 		SlashCommandInteraction interaction = dmd.getInteraction();
 		List<SlashCommandInteractionOption> options = interaction.getOptions();
 
-		String commandText = "";
-
 		Map<String, SlashCommandInteractionOption> optionMap = new HashMap<>();
 		for (SlashCommandInteractionOption option : options) {
 			optionMap.put(option.getName(), option);
 		}
+
+		ServerTextChannel webhookChannel = null;
+		SlashCommandInteractionOption noticeChannelOption = optionMap.get("通知先チャンネル");
+		if (noticeChannelOption != null) {
+			ServerChannel noticeChannel = noticeChannelOption.getChannelValue().orElse(null);
+			if (noticeChannel != null && noticeChannel instanceof ServerTextChannel) {
+				webhookChannel = (ServerTextChannel) noticeChannel;
+			}
+		}
+
+		Role role = null;
+		SlashCommandInteractionOption roleOption = optionMap.get("ロール指定");
+		if (roleOption != null) {
+			role = roleOption.getRoleValue().orElse(null);
+		}
+
+		String linkUrl = null;
+		SlashCommandInteractionOption linkOption = optionMap.get("紐付けurl");
+		if (linkOption != null) {
+			linkUrl = linkOption.getStringValue().orElse(null);
+		}
+
+		boolean isForce = false;
+		SlashCommandInteractionOption forceOption = optionMap.get("権限上書き");
+		if (forceOption != null) {
+			String createForceValue = forceOption.getStringValue().orElse(null);
+			CreateForce forceType = CreateForce.valueOf(createForceValue);
+
+			if (forceType == CreateForce.FORCE) {
+				isForce = true;
+			}
+		}
+
+
+		String guildId = dmd.getGuild().getIdAsString();
+		String serverName = dmd.getGuild().getName();
+		User authorUser = dmd.getUser();
+		String authorName = authorUser.getNickname(dmd.getGuild()).orElse(authorUser.getDisplayName(dmd.getGuild()));
+		String authorIdName = authorUser.getIdAsString() + ":" + authorName;
 
 		// 作成単位の確定
 		SlashCommandInteractionOption createUnitOption = optionMap.get("作成単位");
 		String createUnitValue = createUnitOption.getStringValue().get();
 		CreateUnit createUnit = CreateUnit.valueOf(createUnitValue);
 
-		switch (createUnit) {
-		case CHANNEL:
-			commandText += "/スケジュールforCh";
-			break;
-		default:
-			commandText += "/スケジュール";
+		ServerTextChannel serverChannel = (ServerTextChannel)dmd.getChannel();
+
+		Map<String, String> memberMap = null;
+
+		if (createUnit == CreateUnit.CHANNEL) {
+			guildId += "#" + serverChannel.getIdAsString();
+			serverName += "#" + serverChannel.getName();
+		}
+		memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), serverChannel, role);
+
+		String webhookUrl = null;
+		if (webhookChannel != null) {
+			// 通知先チャンネルを別にする。
+			webhookUrl = DiscordUtil.getWebhookUrl(dmd, webhookChannel);
+		} else {
+			webhookUrl = DiscordUtil.getWebhookUrl(dmd);
 		}
 
-		SlashCommandInteractionOption noticeChannelOption = optionMap.get("通知先チャンネル");
-		if (noticeChannelOption != null) {
-			ServerChannel noticeChannel = noticeChannelOption.getChannelValue().orElse(null);
-			if (noticeChannel != null) {
-				commandText += " " + noticeChannel.getName();
+		if (webhookUrl == null) {
+			return;
+		}
+
+
+
+		logger.info("guildId:" + dmd.getGuild().getIdAsString() +
+				" member count:" + memberMap.size() +
+				" shard num:" + dmd.getGuild().getApi().getCurrentShard());
+
+		if (memberMap.isEmpty()) {
+			// メンバーの取得に失敗。再度コマンドを実行してもらうようにメッセージを送信。
+			DiscordUtil.sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。", dmd);
+			return;
+		}
+		List<String> userIdNameList = new ArrayList<>();
+		for (Entry<String, String> entry : memberMap.entrySet()) {
+			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
+		}
+
+		String roleId = null;
+		if (role != null) {
+			roleId = role.getIdAsString();
+			guildId += "&" + roleId;
+			serverName += "(" + role.getName() + ")";
+		}
+
+		Map<String, Object> result = null;
+		if (linkUrl == null) {
+			ScheduleCommandData scheduleData = new ScheduleCommandData();
+			scheduleData.setGuildId(guildId);
+			scheduleData.setServerName(serverName);
+			scheduleData.setWebhook(webhookUrl);
+			scheduleData.setAuthorIdName(authorIdName);
+			scheduleData.setUserIdNameList(userIdNameList);
+			scheduleData.setRoleId(roleId);
+			if (dmd.getInteraction() != null) {
+				scheduleData.setSlashCommand(true);
+			}
+
+			if (isForce) {
+				// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
+				User guildOwner = dmd.getGuild().getOwner().orElse(null);
+				if (!authorUser.getIdAsString().equals(guildOwner.getIdAsString())) {
+					DiscordUtil.sendMessage("権限上書きができるのは、Discordサーバの管理者だけです。", dmd);
+					return;
+				}
+				scheduleData.setForce(true);
+
+			}
+
+			result = CsmpService.getInstance().createScheduleAdjustment(scheduleData);
+		} else {
+			int keyStartIndex = linkUrl.indexOf("key=");
+			if (keyStartIndex < 0) {
+				DiscordUtil.sendMessage("入力されたURLがデイコードのURLではありません。", dmd);
+				return;
+			}
+
+			int keyEndIndex = linkUrl.indexOf("&", keyStartIndex);
+			if (keyEndIndex < 0) {
+				keyEndIndex = linkUrl.length();
+			}
+			String linkKey = linkUrl.substring(keyStartIndex + 4, keyEndIndex);
+			result = CsmpService.getInstance().linkScheduleAdjustment(guildId, webhookUrl, authorIdName, roleId,
+					linkKey);
+		}
+
+		if (result == null) {
+			DiscordUtil.sendMessage("エラーが発生しました。再度コマンドを実行してください。", dmd);
+		} else if (!"ok".equals(result.get("result"))) {
+			DiscordUtil.sendMessage(String.valueOf(result.get("error")), dmd);
+		} else {
+			if (result.containsKey("url")) {
+
+				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力し、日程登録ボタンを押してください。\n"
+						+ "日程登録ボタンを押した際に日程状況一覧ページをDiscordへ通知することで、他の参加者に日程調整用のページを通知できます。\n"
+						+ "[候補日設定用URL](" + result.get("url") + " )";
+
+				DiscordUtil.sendMessage(message, dmd);
 			}
 		}
-
-		SlashCommandInteractionOption roleOption = optionMap.get("ロール指定");
-		if (roleOption != null) {
-			Role role = roleOption.getRoleValue().orElse(null);
-			if (role != null) {
-				commandText += " -role " + role.getName();
-			}
-		}
-
-		SlashCommandInteractionOption linkOption = optionMap.get("紐付けurl");
-		if (linkOption != null) {
-			String link = linkOption.getStringValue().orElse(null);
-			if (link != null) {
-				commandText += " -link " + link;
-			}
-		}
-
-		SlashCommandInteractionOption forceOption = optionMap.get("権限上書き");
-		if (forceOption != null) {
-			String createForceValue = forceOption.getStringValue().orElse(null);
-			CreateForce force = CreateForce.valueOf(createForceValue);
-
-			if (force == CreateForce.FORCE) {
-				commandText += " -force";
-			}
-		}
-
-		dmd.setText(commandText);
-
-		execute(dmd);
-
 	}
 }

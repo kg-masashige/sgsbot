@@ -2,7 +2,9 @@ package csmp.bot.controller;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,7 +175,8 @@ public class DiscordBotController {
 
 	private void onShardLogin(DiscordApi api) {
 
-		api.getApplicationInfo().thenAccept(info -> {
+
+		api.requestApplicationInfo().thenAccept(info -> {
 			logger.info("Botを起動中... bot名:" + info.getName() + " shard:" + api.getCurrentShard());
 		});
 
@@ -226,7 +229,7 @@ public class DiscordBotController {
 		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
 				.ifPresent(channel -> channel.sendMessage(joinMessage)));
 
-		List<SlashCommandBuilder> builderList = new ArrayList<>();
+		Set<SlashCommandBuilder> builderList = new HashSet<>();
 	    for (IDiscordCommand command : commandList) {
 			if (command instanceof IDiscordSlashCommand) {
 				IDiscordSlashCommand slashCommand = (IDiscordSlashCommand)command;
@@ -260,7 +263,7 @@ public class DiscordBotController {
 		});
 
 
-		api.getApplicationInfo().thenAccept(info -> {
+		api.requestApplicationInfo().thenAccept(info -> {
 			logger.info("Botの起動完了. bot名:" + info.getName() + " shard:" + api.getCurrentShard());
 		});
 

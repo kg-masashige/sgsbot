@@ -81,33 +81,6 @@ public class CsmpService extends BaseService {
 		return result.toString();
 	}
 
-	/**
-	 * セッション予定日登録.
-	 * @param guildId ギルドID
-	 * @param webhook webhookURL
-	 * @param dates 登録日付
-	 * @param message リマインドメッセージ
-	 * @return 登録情報
-	 */
-	public Map<String, Object> registerSchedule(String guildId, String webhook, String dates, String message) {
-
-		String registerUrl = csmpUrl + "sgsbot/registerSchedule";
-		FormMap params = new FormMap();
-		params.put("guildId", guildId);
-		params.put("webhook", webhook);
-		params.put("dates", dates);
-		params.put("message", message);
-
-		String result = post(registerUrl, params);
-
-		if (result != null) {
-			return JSON.decode(result);
-		}
-
-		return null;
-
-	}
-
 	private static Map<String, String> guildExecutionMap = new ConcurrentHashMap<>();
 
 	private static synchronized boolean checkGuildId(String guildId) {
@@ -260,51 +233,6 @@ public class CsmpService extends BaseService {
 		// 更新に失敗しても通知はしない。
 	}
 
-
-	/**
-	 * セッション予定日削除.
-	 * @param guildId ギルドID
-	 * @param dates カンマ区切りの日付
-	 * @return 削除情報
-	 */
-	public Map<String, Object> deleteSchedule(String guildId, String dates) {
-
-		String registerUrl = csmpUrl + "sgsbot/deleteSchedule";
-
-		FormMap params = new FormMap();
-		params.put("guildId", guildId);
-		params.put("dates", dates);
-
-		String result = post(registerUrl, params);
-
-		if (result != null) {
-			return JSON.decode(result);
-		}
-
-		return null;
-
-	}
-
-	/**
-	 * サーバ情報の取得。セッション予定日.
-	 * @param guildId ギルドID
-	 * @return サーバ情報。現在はセッション予定日情報。
-	 */
-	public Map<String, Object> getGuildScheduleInfo(String guildId) {
-
-		String registerUrl = csmpUrl + "sgsbot/listSchedule";
-		FormMap params = new FormMap();
-		params.put("guildId", guildId);
-
-		String result = post(registerUrl, params);
-
-		if (result != null) {
-			return JSON.decode(result);
-		}
-
-		return null;
-
-	}
 
 	/**
 	 * キャラクターシートとwebhookの紐付け登録をする.

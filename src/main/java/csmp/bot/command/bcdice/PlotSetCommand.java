@@ -64,7 +64,7 @@ public class PlotSetCommand implements IDiscordCommand,IDiscordSlashCommand {
 
 	@Override
 	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String message = dmd.getInteraction().getOptionStringValueByIndex(0).orElse(null);
+		String message = dmd.getInteraction().getArgumentStringValueByIndex(0).orElse(null);
 		PlotOpenCommand.setPlot(dmd.getChannel().getId(), dmd.getUser().getId(), message);
 		dmd.getInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).setContent(message + "をプロットしました。").respond();
 

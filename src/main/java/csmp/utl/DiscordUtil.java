@@ -16,7 +16,6 @@ import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.webhook.IncomingWebhook;
-import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
 import org.javacord.api.exception.MissingPermissionsException;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
@@ -40,6 +39,7 @@ public class DiscordUtil {
 
 	}
 
+
 	private static boolean isMissingPermissionsException(Throwable t) {
 		if (t instanceof MissingPermissionsException) {
 			return true;
@@ -51,24 +51,19 @@ public class DiscordUtil {
 	}
 
 	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc) {
-		IncomingWebhook webhook = null;
+
+		List<IncomingWebhook> webhookList = tc.getIncomingWebhooks().join();
+		for (IncomingWebhook incomingWebhook : webhookList) {
+			if (incomingWebhook == null || incomingWebhook.getUrl() == null) {
+				continue;
+			}
+			return incomingWebhook.getUrl().toString();
+		}
+
 		try {
-			List<Webhook> webhookList = tc.getWebhooks().join();
-			if (webhookList != null) {
-				for (Webhook webhookElement : webhookList) {
-					if (webhookElement instanceof IncomingWebhook) {
-						webhook = (IncomingWebhook)webhookElement;
-						break;
-					}
-				}
-			}
-
-			if (webhook == null) {
-				webhook = new WebhookBuilder(tc)
-						.setName(dmd.getGuild().getApi().getApplicationInfo().get().getName())
-						.create().join();
-
-			}
+			IncomingWebhook webhook = new WebhookBuilder(tc)
+					.setName(dmd.getGuild().getApi().getCachedApplicationInfo().getName())
+					.create().join();
 
 			return webhook.getUrl().toString();
 		} catch (Exception e) {

@@ -114,15 +114,19 @@ public class DiscordMessageData {
 	 */
 	public String getText() {
 		if (text == null) {
-			String content = message.getMessageContent();
-			if (content == null) {
-				content = "";
-			}
-			if (content.startsWith("／")) {
-				content = content.replace("／", "/");
-			}
+			if (this.interaction == null) {
+				String content = message.getMessageContent();
+				if (content == null) {
+					content = "";
+				}
+				if (content.startsWith("／")) {
+					content = content.replace("／", "/");
+				}
 
-			text = content;
+				text = content;
+			} else {
+				text = interaction.getFullCommandName();
+			}
 		}
 
 		return text;

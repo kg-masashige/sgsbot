@@ -42,7 +42,10 @@ public class BcDiceRollCommand implements IDiscordCommand, IDiscordSlashCommand 
 
 		if (result != null) {
 			dmd.getChannel().sendMessage(
-					new EmbedBuilder().setAuthor(dmd.getUser())
+					new EmbedBuilder().setAuthor(
+							dmd.getUser().getDisplayName(dmd.getGuild()),
+							null,
+							dmd.getUser().getEffectiveAvatar(dmd.getGuild()))
 						.addField(dmd.getText(), result)
 					);
 		}
