@@ -2,6 +2,7 @@ package csmp.bot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import csmp.bot.command.IDiscordCommand;
 import csmp.bot.command.bcdice.BcDiceGetSystemInfoCommand;
@@ -72,6 +73,14 @@ public class DiscordSessionSupportBot {
 		DiscordBotController daycordBot = new DiscordBotController(botCommandClassList, daycordEventList, token);
 		daycordBot.setCacheSize(0);
 		daycordBot.setCacheStorageTimeInSeconds(0);
+		// シャード分割用
+		Optional.ofNullable(System.getenv("SHARD_TOTAL"))
+		.ifPresent(value -> daycordBot.setTotalShards(Integer.parseInt(value)));
+		Optional.ofNullable(System.getenv("SHARD_START_NO"))
+				.ifPresent(value -> daycordBot.setStart(Integer.parseInt(value)));
+		Optional.ofNullable(System.getenv("SHARD_END_NO"))
+				.ifPresent(value -> daycordBot.setEnd(Integer.parseInt(value)));
+
 
 		daycordBot.execute(startMessage, isMessageIntent);
 

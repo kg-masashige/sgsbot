@@ -44,6 +44,16 @@ public class DiscordBotController {
 	private int totalShards = 0;
 
 	/**
+	 * スタートシャードNo
+	 */
+	private int startShardNo = -1;
+
+	/**
+	 * エンドシャードNo
+	 */
+	private int endShardNo = -1;
+
+	/**
 	 * キャッシュサイズ
 	 */
 	private int cacheSize = 50;
@@ -142,14 +152,35 @@ public class DiscordBotController {
 
 		if (totalShards == 0) {
 			apiBuilder = apiBuilder.setRecommendedTotalShards().join();
+			totalShards = apiBuilder.getTotalShards();
 		} else {
 			apiBuilder = apiBuilder.setTotalShards(totalShards);
-
 		}
-		apiBuilder.loginAllShards()
-				.forEach(shardFuture -> shardFuture
-						.thenAcceptAsync(this::onShardLogin)
-						.exceptionally(ExceptionLogger.get()));
+
+		int[] array = null;
+		if (startShardNo >= 0) {
+			if (endShardNo < 0) {
+				endShardNo = totalShards - 1;
+			}
+			// 0～20 : 21個
+			// 21～ラスト：21～39
+
+			array = new int[endShardNo - startShardNo + 1];
+			for (int i = 0; i < array.length; i++) {
+				array[i] = startShardNo + i;
+			}
+			apiBuilder.loginShards(array)
+			.forEach(shardFuture -> shardFuture
+					.thenAcceptAsync(this::onShardLogin)
+					.exceptionally(ExceptionLogger.get()));
+
+		} else {
+			apiBuilder.loginAllShards()
+			.forEach(shardFuture -> shardFuture
+					.thenAcceptAsync(this::onShardLogin)
+					.exceptionally(ExceptionLogger.get()));
+		}
+
 	}
 
 	/**
@@ -171,6 +202,20 @@ public class DiscordBotController {
 	 */
 	public void setTotalShards(int totalShards) {
 		this.totalShards = totalShards;
+	}
+
+	/**
+	 * @param start シャード開始No
+	 */
+	public void setStart(int start) {
+		this.startShardNo = start;
+	}
+
+	/**
+	 * @param end シャード終了No
+	 */
+	public void setEnd(int end) {
+		this.endShardNo = end;
 	}
 
 	private void onShardLogin(DiscordApi api) {
