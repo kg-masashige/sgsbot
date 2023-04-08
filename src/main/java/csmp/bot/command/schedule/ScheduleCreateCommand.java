@@ -12,7 +12,9 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerChannel;
+import org.javacord.api.entity.channel.ServerForumChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.ServerThreadChannel;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.interaction.SlashCommandBuilder;
@@ -264,7 +266,8 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 				"スケジュール調整用ページを作成する単位を選択します。", true,
 				Arrays.asList(
 						SlashCommandOptionChoice.create("チャンネル", CreateUnit.CHANNEL.name()),
-						SlashCommandOptionChoice.create("サーバー", CreateUnit.SERVER.name())));
+						SlashCommandOptionChoice.create("サーバー", CreateUnit.SERVER.name()),
+						SlashCommandOptionChoice.create("スレッド", CreateUnit.THREAD.name())));
 
 		SlashCommandOption role = SlashCommandOption.create(
 				SlashCommandOptionType.ROLE, "ロール指定",
@@ -297,7 +300,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 	}
 
 	public enum CreateUnit {
-		CHANNEL, SERVER
+		CHANNEL, SERVER, THREAD
 	}
 
 	public enum CreateForce {
@@ -351,7 +354,6 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			}
 		}
 
-
 		String guildId = dmd.getGuild().getIdAsString();
 		String serverName = dmd.getGuild().getName();
 		User authorUser = dmd.getUser();
@@ -363,29 +365,82 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 		String createUnitValue = createUnitOption.getStringValue().get();
 		CreateUnit createUnit = CreateUnit.valueOf(createUnitValue);
 
-		ServerTextChannel serverChannel = (ServerTextChannel)dmd.getChannel();
+		// スレッド、サーバテキストそれぞれの処理
+		ServerChannel channel = (ServerChannel) dmd.getChannel();
+		ServerTextChannel textChannel = null;
+		ServerForumChannel forumChannel = null;
+		String threadId = null;
+		String webhookUrl = null;
+
+		// serverTextChannelであればそのまま取得する。
+		textChannel = channel.asServerTextChannel().orElse(null);
+		ServerThreadChannel threadChannel = channel.asServerThreadChannel().orElse(null);
+
+		if (threadChannel != null) {
+			textChannel = threadChannel.getParent().asServerTextChannel().orElse(null);
+			forumChannel = threadChannel.getParent().asServerForumChannel().orElse(null);
+			threadId = threadChannel.getIdAsString();
+		}
 
 		Map<String, String> memberMap = null;
-
-		if (createUnit == CreateUnit.CHANNEL) {
-			guildId += "#" + serverChannel.getIdAsString();
-			serverName += "#" + serverChannel.getName();
+		if (textChannel != null) {
+			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), textChannel, role);
+		} else if (forumChannel != null) {
+			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), forumChannel, role);
 		}
-		memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), serverChannel, role);
 
-		String webhookUrl = null;
+		switch (createUnit) {
+		case THREAD:
+			if (threadId == null) {
+				DiscordUtil.sendMessage("スレッド単位で実施する場合、スレッド内でコマンドを実行してください。", dmd, true);
+				return;
+			}
+			if (textChannel != null) {
+				guildId += "#" + textChannel.getIdAsString() + "/" + threadId;
+				serverName += "#" + textChannel.getName() + "/" + threadChannel.getName();
+			} else if (forumChannel != null) {
+				guildId += "#" + forumChannel.getIdAsString() + "/" + threadId;
+				serverName += "#" + forumChannel.getName() + "/" + threadChannel.getName();
+			}
+
+			break;
+		case CHANNEL:
+			if (textChannel == null) {
+				DiscordUtil.sendMessage("チャンネル単位で実施する場合、テキストチャンネル内でコマンドを実行してください。", dmd, true);
+				return;
+			}
+			guildId += "#" + textChannel.getIdAsString();
+			serverName += "#" + textChannel.getName();
+
+			break;
+		case SERVER:
+			if (textChannel == null) {
+				DiscordUtil.sendMessage("サーバー単位で実施する場合、テキストチャンネル内でコマンドを実行してください。", dmd, true);
+				return;
+			}
+			break;
+		default:
+			break;
+		}
+
 		if (webhookChannel != null) {
 			// 通知先チャンネルを別にする。
 			webhookUrl = DiscordUtil.getWebhookUrl(dmd, webhookChannel);
 		} else {
-			webhookUrl = DiscordUtil.getWebhookUrl(dmd);
+			if (createUnit == CreateUnit.THREAD) {
+				if (forumChannel != null) {
+					webhookUrl = DiscordUtil.getWebhookUrl(dmd, forumChannel, threadId);
+				} else {
+					webhookUrl = DiscordUtil.getWebhookUrl(dmd, textChannel, threadId);
+				}
+			} else {
+				webhookUrl = DiscordUtil.getWebhookUrl(dmd);
+			}
 		}
 
 		if (webhookUrl == null) {
 			return;
 		}
-
-
 
 		logger.info("guildId:" + dmd.getGuild().getIdAsString() +
 				" member count:" + memberMap.size() +

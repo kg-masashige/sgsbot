@@ -7,7 +7,10 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.javacord.api.entity.channel.ServerChannel;
+import org.javacord.api.entity.channel.ServerForumChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.ServerThreadChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionState;
 import org.javacord.api.entity.permission.PermissionType;
@@ -16,6 +19,7 @@ import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.webhook.IncomingWebhook;
+import org.javacord.api.entity.webhook.Webhook;
 import org.javacord.api.entity.webhook.WebhookBuilder;
 import org.javacord.api.exception.MissingPermissionsException;
 import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
@@ -33,12 +37,17 @@ public class DiscordUtil {
 		if (dmd.getChannel() instanceof ServerTextChannel) {
 			return getWebhookUrl(dmd, (ServerTextChannel)dmd.getChannel());
 		}
-		sendMessage("スケジュール作成のコマンドはテキストチャンネル内で実施してください。\n"
-				+ "スレッド内やボイスチャンネル内のチャットでは使用できません。", dmd, true);
+		sendMessage("フォーラムチャンネルやテキストチャンネルのスレッド内でコマンドを実行する場合、作成単位をスレッドにしてください。\n"
+				+ "ボイスチャンネルのチャットなどでは実行できません。", dmd, true);
 		return null;
 
 	}
 
+	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc, String threadId) {
+
+		String webhookUrl = getWebhookUrl(dmd, tc);
+		return webhookUrl + "?thread_id=" + threadId;
+	}
 
 	private static boolean isMissingPermissionsException(Throwable t) {
 		if (t instanceof MissingPermissionsException) {
@@ -48,6 +57,25 @@ public class DiscordUtil {
 			return isMissingPermissionsException(t.getCause());
 		}
 		return false;
+	}
+
+	public static String getWebhookUrl(DiscordMessageData dmd, ServerForumChannel forumChannel, String threadId) {
+		List<Webhook> list = dmd.getGuild().getAllIncomingWebhooks().join();
+		for (Webhook webhook : list) {
+			if (webhook.asIncomingWebhook().isPresent()) {
+				IncomingWebhook incomingWebhook = webhook.asIncomingWebhook().get();
+				if (incomingWebhook.getChannelId() == forumChannel.getId()) {
+					return incomingWebhook.getUrl().toString() + "?thread_id=" + threadId;
+				}
+			}
+
+		}
+		sendMessage("フォーラムにウェブフックが作成されていません。\n"
+				+ "フォーラム内でデイコードを使用する場合、手動でウェブフックを作成する必要があります。\n"
+				+ "フォーラムチャンネルを編集し、ウェブフックを作成してください。", dmd);
+
+		return null;
+
 	}
 
 	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc) {
@@ -79,7 +107,19 @@ public class DiscordUtil {
 		}
 	}
 
-	public static Map<String, String> getMemberIdMap(Server guild, ServerTextChannel stc, Role role) {
+	private static Permissions getPermissions(ServerChannel channel, User user) {
+		if (channel instanceof ServerTextChannel) {
+			return ((ServerTextChannel)channel).getEffectivePermissions(user);
+		} else if (channel instanceof ServerForumChannel) {
+			return ((ServerForumChannel)channel).getEffectivePermissions(user);
+		} else if (channel instanceof ServerThreadChannel) {
+			return getPermissions(((ServerThreadChannel) channel).getParent(), user);
+		}
+
+		return null;
+	}
+
+	public static Map<String, String> getMemberIdMap(Server guild, ServerChannel channel, Role role) {
 		Map<String, String> userMap = new HashMap<>();
 
         for (User user : guild.getMembers()) {
@@ -87,8 +127,8 @@ public class DiscordUtil {
         		// botはスルー
         		continue;
         	}
-    		if (stc != null) {
-        		Permissions permissions = stc.getEffectivePermissions(user);
+    		if (channel != null) {
+        		Permissions permissions = getPermissions(channel, user);
         		if (permissions.getState(PermissionType.VIEW_CHANNEL) == PermissionState.DENIED) {
         			// 読み込み権限がなければスルー
         			continue;
