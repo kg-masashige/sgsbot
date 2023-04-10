@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.ServerTextChannelBuilder;
 import org.javacord.api.entity.permission.PermissionType;
@@ -69,25 +70,37 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		Server guild = dmd.getGuild();
-		CsmpService csmpService = CsmpService.getInstance();
-		Map<Long, Map<Object,Object>> guildScenarioInfo = csmpService.getGuildScenarioInfo();
-
-		if (guildScenarioInfo.containsKey(guild.getId())) {
-			DiscordUtil.sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。", dmd);
-			return;
+		String categoryName = "";
+		if (dmd.getCommandArray().length >= 3) {
+			// カテゴリ指定。カテゴリ名を取得する。
+			categoryName = dmd.getCommandArray()[2];
 		}
 
+		Server guild = dmd.getGuild();
+		CsmpService csmpService = CsmpService.getInstance();
+		Map<Long, Map<Object,Object>> guildScenarioInfo = null;
+		if (categoryName.isEmpty()) {
+			guildScenarioInfo = csmpService.getGuildScenarioInfo();
+
+			if (guildScenarioInfo.containsKey(guild.getId())) {
+				DiscordUtil.sendMessage("このサーバーは既にシナリオが登録されています。「/sgsclear」コマンドを使ってシナリオをクリアしてください。", dmd);
+				return;
+			}
+
+		}
 		// シナリオ情報取得
 		Map<Object, Object> secretMap = csmpService.getScenarioSheetInfo(dmd.getCommandArray()[1]);
 		if (secretMap == null) {
 			DiscordUtil.sendMessage("シナリオシートのURLが誤っているか、公開中にチェックが入っていません。", dmd);
 			return;
 		}
-		guildScenarioInfo.put(guild.getId(), secretMap);
 		String scenarioName = (String)((Map<String, Object>)secretMap.get("base")).get("name");
 		// シナリオ名のメッセージ出力
-		DiscordUtil.sendMessage("シナリオ：" + scenarioName, dmd, false);
+		DiscordUtil.sendMessage("シナリオ：[" + scenarioName + "](" + dmd.getCommandArray()[1].replace("edit.html", "detail") + ")", dmd, false);
+
+		if (categoryName.isEmpty()) {
+			guildScenarioInfo.put(guild.getId(), secretMap);
+		}
 		logger.info("シナリオ名：" + scenarioName);
 		if ("/sgsread".equals(dmd.getCommandArray()[0])) {
 			return;
@@ -95,7 +108,23 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 
 		Date current = Calendar.getInstance().getTime();
 		SimpleDateFormat sdf = DateUtil.getDateFormat();
-		new ServerUpdater(guild).setName(scenarioName + "_" + sdf.format(current)).update();
+
+
+		ChannelCategory category = null;
+		if (categoryName.isEmpty()) {
+			new ServerUpdater(guild).setName(scenarioName + "_" + sdf.format(current)).update();
+		} else {
+			List<ChannelCategory> channelCategories = dmd.getGuild().getChannelCategories();
+			for (ChannelCategory channelCategory : channelCategories) {
+				if (categoryName.equals(channelCategory.getName())) {
+					category = channelCategory;
+				}
+			}
+
+			if (category == null) {
+				category = dmd.getGuild().createChannelCategoryBuilder().setName(categoryName).create().join();
+			}
+		}
 
 		Map<String, Role> roleMap = new HashMap<>();
 		for (Role role : guild.getRoles()) {
@@ -103,15 +132,29 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		}
 
 		Map<String, ServerTextChannel> channelMap = new HashMap<>();
-		List<ServerTextChannel> channels = guild.getTextChannels();
-		for (ServerTextChannel channel : channels) {
-			channelMap.put(channel.getName().toLowerCase(), channel);
+		if (category != null) {
+			category.getChannels().forEach(action -> {
+				action.asServerTextChannel().ifPresent(channel ->
+				channelMap.put(channel.getName().toLowerCase(), channel));
+			});
+
+		} else {
+			List<ServerTextChannel> channels = guild.getTextChannels();
+			for (ServerTextChannel channel : channels) {
+				channelMap.put(channel.getName().toLowerCase(), channel);
+			}
+
 		}
 
 		// PC情報の取得
 		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
 		for (Map<String, Object> pcInfo : pcList) {
 			String roleName = "PC" + CsmpService.text(pcInfo, "name");
+			String channelName = roleName;
+			if (!categoryName.isEmpty()) {
+				// ロール名はカテゴリつき、チャンネル名はカテゴリなし。
+				roleName = categoryName + "_" + roleName;
+			}
 
 			Role role = roleMap.get(roleName.toLowerCase());
 			if (role == null) {
@@ -122,24 +165,29 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 			}
 
 
-			ServerTextChannel tc = channelMap.get(roleName.toLowerCase());
+			ServerTextChannel tc = channelMap.get(channelName.toLowerCase());
 
 			if (tc == null) {
 				ServerTextChannelBuilder stcBuilder = new ServerTextChannelBuilder(guild)
-						.setName(roleName)
+						.setName(channelName)
 						.addPermissionOverwrite(
 								guild.getEveryoneRole(), new PermissionsBuilder().setDenied(PermissionType.VIEW_CHANNEL).build())
 						.addPermissionOverwrite(
 								role, new PermissionsBuilder().setAllowed(PermissionType.VIEW_CHANNEL).build());
 
-				dmd.getCategory().ifPresent(category -> stcBuilder.setCategory(category));
+				if (category != null) {
+					stcBuilder.setCategory(category);
+				} else {
+					dmd.getCategory().ifPresent(ctg -> stcBuilder.setCategory(ctg));
+				}
+
 
 				tc = stcBuilder.create().get();
 
-				channelMap.put(roleName.toLowerCase(), tc);
+				channelMap.put(channelName.toLowerCase(), tc);
 			}
 
-			String textMessage = "■" + roleName + "　推奨：" +CsmpService.text(pcInfo, "recommend") + "\r\n" +
+			String textMessage = "■" + channelName + "　推奨：" +CsmpService.text(pcInfo, "recommend") + "\r\n" +
 					"・使命：【" +CsmpService.text(pcInfo, "mission") + "】" + "\r\n" +
 					"・導入：\r\n" +
 					CsmpService.text(pcInfo, "intro") + "\r\n" +
@@ -174,6 +222,10 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 				SlashCommandOptionType.STRING, "シナリオシートurl",
 				"キャラクターシート倉庫に登録しているシナリオシートのURLを指定してください。", true);
 
+		SlashCommandOption category = SlashCommandOption.create(
+				SlashCommandOptionType.STRING, "カテゴリ名",
+				"指定されたカテゴリを作成し、その配下に各PC用のチャンネルを作成します。指定した名前のカテゴリが存在する場合はその配下に作成します。", false);
+
 		SlashCommandOption readonly = SlashCommandOption.createWithChoices(
 				SlashCommandOptionType.STRING, "読み込み専用",
 				"シナリオシートの読み込みだけを行い、チャンネルやロールの設定を行わない場合に指定してください。", false,
@@ -185,6 +237,7 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		return new SlashCommandBuilder().setName(getCommandName())
 				.setDescription("シノビガミのシナリオシートを読み込み、PCごとのチャンネルとロールを作成し、秘密を配付します。")
 				.addOption(link)
+				.addOption(category)
 				.addOption(readonly)
 				;
 	}
@@ -227,6 +280,14 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		}
 
 		dmd.setText(commandText + url);
+
+		// 読み込み専用オプション
+		SlashCommandInteractionOption categoryOption = optionMap.get("カテゴリ名");
+		if (categoryOption != null) {
+			categoryOption.getStringValue().ifPresent(category -> {
+				dmd.setText(dmd.getText() + " " + category);
+			});
+		}
 
 		execute(dmd);
 
