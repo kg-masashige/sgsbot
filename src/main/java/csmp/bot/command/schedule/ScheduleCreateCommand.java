@@ -289,6 +289,15 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 						)
 				);
 
+		SlashCommandOption noMember = SlashCommandOption.createWithChoices(
+				SlashCommandOptionType.STRING, "メンバーなし",
+				"自分以外のメンバーを追加せずにスケジュールを作成します。メンバーを手動で追加したい場合に設定してください。", false,
+				Arrays.asList(
+						SlashCommandOptionChoice.create("メンバーなし", CreateMembers.NO_MEMBER.name())
+						)
+				);
+
+
 		return new SlashCommandBuilder().setName(getCommandName())
 				.setDescription("デイコードでスケジュール調整用のページを作成します。")
 				.addOption(createUnit)
@@ -296,6 +305,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 				.addOption(channel)
 				.addOption(link)
 				.addOption(force)
+				.addOption(noMember)
 				;
 	}
 
@@ -305,6 +315,10 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 
 	public enum CreateForce {
 		FORCE, NOT_FORCE
+	}
+
+	public enum CreateMembers {
+		NO_MEMBER, MEMBERS
 	}
 
 	@Override
@@ -354,6 +368,17 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			}
 		}
 
+		boolean isNoMember = false;
+		SlashCommandInteractionOption noMemberOption = optionMap.get("メンバーなし");
+		if (noMemberOption != null) {
+			String createNoMemberValue = noMemberOption.getStringValue().orElse(null);
+			CreateMembers membersType = CreateMembers.valueOf(createNoMemberValue);
+
+			if (membersType == CreateMembers.NO_MEMBER) {
+				isNoMember = true;
+			}
+		}
+
 		String guildId = dmd.getGuild().getIdAsString();
 		String serverName = dmd.getGuild().getName();
 		User authorUser = dmd.getUser();
@@ -383,7 +408,10 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 		}
 
 		Map<String, String> memberMap = null;
-		if (textChannel != null) {
+		if (isNoMember) {
+			memberMap = new HashMap<>();
+			memberMap.put(authorUser.getIdAsString(), authorName);
+		} else if (textChannel != null) {
 			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), textChannel, role);
 		} else if (forumChannel != null) {
 			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), forumChannel, role);
