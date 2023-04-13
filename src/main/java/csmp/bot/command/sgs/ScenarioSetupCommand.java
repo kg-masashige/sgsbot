@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.ChannelCategoryBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.ServerTextChannelBuilder;
 import org.javacord.api.entity.permission.PermissionType;
@@ -96,7 +97,8 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		}
 		String scenarioName = (String)((Map<String, Object>)secretMap.get("base")).get("name");
 		// シナリオ名のメッセージ出力
-		DiscordUtil.sendMessage("シナリオ：[" + scenarioName + "](" + dmd.getCommandArray()[1].replace("edit.html", "detail") + ")", dmd, false);
+		String scenarioInfoMessage = "シナリオ：[" + scenarioName + "](" + dmd.getCommandArray()[1].replace("edit.html", "detail") + ")";
+		DiscordUtil.sendMessage(scenarioInfoMessage, dmd, false);
 
 		if (categoryName.isEmpty()) {
 			guildScenarioInfo.put(guild.getId(), secretMap);
@@ -109,6 +111,39 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 		Date current = Calendar.getInstance().getTime();
 		SimpleDateFormat sdf = DateUtil.getDateFormat();
 
+		// PC情報の取得
+		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
+
+		// ロール設定
+		Map<String, Role> roleMap = new HashMap<>();
+		for (Role role : guild.getRoles()) {
+			roleMap.put(role.getName().toLowerCase(), role);
+		}
+
+		List<Role> pcRoleList = new ArrayList<>();
+
+		for (Map<String, Object> pcInfo : pcList) {
+			String roleName = "PC" + CsmpService.text(pcInfo, "name");
+			if (!categoryName.isEmpty()) {
+				// ロール名はカテゴリつき、チャンネル名はカテゴリなし。
+				roleName = categoryName + "_" + roleName;
+			}
+
+			Role role = roleMap.get(roleName.toLowerCase());
+			if (role == null) {
+				role = guild.createRoleBuilder()
+						.setName(roleName)
+						.create().get();
+				roleMap.put(roleName.toLowerCase(), role);
+			}
+
+			pcRoleList.add(role);
+
+			// コマンド実行ユーザにロールを付与
+			dmd.getUser().addRole(role);
+
+		}
+
 
 		ChannelCategory category = null;
 		if (categoryName.isEmpty()) {
@@ -118,19 +153,36 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 			for (ChannelCategory channelCategory : channelCategories) {
 				if (categoryName.equals(channelCategory.getName())) {
 					category = channelCategory;
+					break;
 				}
 			}
 
 			if (category == null) {
-				category = dmd.getGuild().createChannelCategoryBuilder().setName(categoryName).create().join();
+				ChannelCategoryBuilder categoryBuilder = dmd.getGuild().createChannelCategoryBuilder()
+						.setName(categoryName);
+
+				if (!pcRoleList.isEmpty()) {
+					categoryBuilder = categoryBuilder.addPermissionOverwrite(
+							dmd.getGuild().getEveryoneRole(),
+							new PermissionsBuilder().setDenied(PermissionType.VIEW_CHANNEL).build());
+
+
+					for (Role role : pcRoleList) {
+						categoryBuilder = categoryBuilder.addPermissionOverwrite(
+										role, new PermissionsBuilder().setAllowed(PermissionType.VIEW_CHANNEL).build());
+					}
+				}
+
+				category = categoryBuilder.create().join();
+
+				new ServerTextChannelBuilder(guild)
+						.setName("相談・調整").setCategory(category).create().join();
+
+
 			}
 		}
 
-		Map<String, Role> roleMap = new HashMap<>();
-		for (Role role : guild.getRoles()) {
-			roleMap.put(role.getName().toLowerCase(), role);
-		}
-
+		// チャンネル設定
 		Map<String, ServerTextChannel> channelMap = new HashMap<>();
 		if (category != null) {
 			category.getChannels().forEach(action -> {
@@ -146,8 +198,6 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 
 		}
 
-		// PC情報の取得
-		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
 		for (Map<String, Object> pcInfo : pcList) {
 			String roleName = "PC" + CsmpService.text(pcInfo, "name");
 			String channelName = roleName;
@@ -155,15 +205,7 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 				// ロール名はカテゴリつき、チャンネル名はカテゴリなし。
 				roleName = categoryName + "_" + roleName;
 			}
-
 			Role role = roleMap.get(roleName.toLowerCase());
-			if (role == null) {
-				role = guild.createRoleBuilder()
-						.setName(roleName)
-						.create().get();
-				roleMap.put(roleName.toLowerCase(), role);
-			}
-
 
 			ServerTextChannel tc = channelMap.get(channelName.toLowerCase());
 
@@ -176,7 +218,9 @@ public class ScenarioSetupCommand implements IDiscordCommand, IDiscordSlashComma
 								role, new PermissionsBuilder().setAllowed(PermissionType.VIEW_CHANNEL).build());
 
 				if (category != null) {
+
 					stcBuilder.setCategory(category);
+
 				} else {
 					dmd.getCategory().ifPresent(ctg -> stcBuilder.setCategory(ctg));
 				}
