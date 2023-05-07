@@ -80,15 +80,15 @@ public class DiscordUtil {
 
 	public static String getWebhookUrl(DiscordMessageData dmd, ServerTextChannel tc) {
 
-		List<IncomingWebhook> webhookList = tc.getIncomingWebhooks().join();
-		for (IncomingWebhook incomingWebhook : webhookList) {
-			if (incomingWebhook == null || incomingWebhook.getUrl() == null) {
-				continue;
-			}
-			return incomingWebhook.getUrl().toString();
-		}
-
 		try {
+			List<IncomingWebhook> webhookList = tc.getIncomingWebhooks().join();
+			for (IncomingWebhook incomingWebhook : webhookList) {
+				if (incomingWebhook == null || incomingWebhook.getUrl() == null) {
+					continue;
+				}
+				return incomingWebhook.getUrl().toString();
+			}
+
 			IncomingWebhook webhook = new WebhookBuilder(tc)
 					.setName(dmd.getGuild().getApi().getCachedApplicationInfo().getName())
 					.create().join();
