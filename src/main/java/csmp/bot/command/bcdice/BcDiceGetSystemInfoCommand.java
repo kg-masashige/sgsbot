@@ -41,6 +41,9 @@ public class BcDiceGetSystemInfoCommand implements IDiscordCommand, IDiscordSlas
 	public boolean checkInput(DiscordMessageData dmd) {
 		if (dmd.getCommandArray().length >= 3) {
 			String targetSystem = dmd.getCommandArray()[2];
+			for (int i = 3; i < dmd.getCommandArray().length; i++) {
+				targetSystem += " " + dmd.getCommandArray()[i];
+			}
 			Map<String, String> systemNames = BcDiceApiService.getInstance().getSystemNames();
 			if (systemNames.containsKey(targetSystem)) {
 				return true;
