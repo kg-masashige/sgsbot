@@ -176,4 +176,14 @@ public class DiscordUtil {
 		sendMessage(message, dmd, true);
 	}
 
+	public static String getSystemName(String[] commandArray) {
+		String targetSystem = commandArray[2];
+		for (int i = 3; i < commandArray.length; i++) {
+			targetSystem += " " + commandArray[i];
+		}
+		return targetSystem;
+	}
+
+
+
 }

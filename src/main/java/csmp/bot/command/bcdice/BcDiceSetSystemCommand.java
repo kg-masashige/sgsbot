@@ -40,10 +40,7 @@ public class BcDiceSetSystemCommand implements IDiscordCommand, IDiscordSlashCom
 	@Override
 	public boolean checkInput(DiscordMessageData dmd) {
 		if (dmd.getCommandArray().length >= 3) {
-			String targetSystem = dmd.getCommandArray()[2];
-			for (int i = 3; i < dmd.getCommandArray().length; i++) {
-				targetSystem += " " + dmd.getCommandArray()[i];
-			}
+			String targetSystem = DiscordUtil.getSystemName(dmd.getCommandArray());
 
 			Map<String, String> systemNames = BcDiceApiService.getInstance().getSystemNames();
 			if (systemNames.containsKey(targetSystem)) {
@@ -59,7 +56,7 @@ public class BcDiceSetSystemCommand implements IDiscordCommand, IDiscordSlashCom
 
 	@Override
 	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String targetSystem = dmd.getCommandArray()[2];
+		String targetSystem = DiscordUtil.getSystemName(dmd.getCommandArray());
 		BcDiceApiService bcDiceApi = BcDiceApiService.getInstance();
 
 		Map<String, String> systemNames = bcDiceApi.getSystemNames();
