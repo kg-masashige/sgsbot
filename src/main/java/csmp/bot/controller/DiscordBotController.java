@@ -69,9 +69,9 @@ public class DiscordBotController {
 	private String joinMessage = "";
 
 	/**
-	 * メッセージインテントのON/OFF
+	 * インテントのタイプ
 	 */
-	private boolean isMessageIntent = true;
+	private IntentType intentType;
 
 	/**
 	 * ロガー
@@ -127,28 +127,14 @@ public class DiscordBotController {
 	 * 実行メソッド.
 	 *
 	 * @param joinMessage 接続時メッセージ
-	 * @param isMessageIntent MESSAGE_INTENTのON/OFF
+	 * @param intentType 許可するintentのタイプ
 	 */
-	public void execute(String joinMessage, boolean isMessageIntent) {
+	public void execute(String joinMessage, IntentType intentType) {
 		this.joinMessage = joinMessage;
-		this.isMessageIntent = isMessageIntent;
+		this.intentType = intentType;
 
 		DiscordApiBuilder apiBuilder = new DiscordApiBuilder().setToken(token);
-		if (isMessageIntent) {
-			apiBuilder.setIntents(
-					Intent.DIRECT_MESSAGES,
-					Intent.GUILDS,
-					Intent.GUILD_MESSAGES,
-					Intent.GUILD_MEMBERS,
-					Intent.GUILD_WEBHOOKS,
-					Intent.GUILD_INTEGRATIONS);
-		} else {
-			apiBuilder.setIntents(
-					Intent.GUILDS,
-					Intent.GUILD_MEMBERS,
-					Intent.GUILD_WEBHOOKS,
-					Intent.GUILD_INTEGRATIONS);
-		}
+		apiBuilder.setIntents(intentType.getIntents());
 
 		if (totalShards == 0) {
 			apiBuilder = apiBuilder.setRecommendedTotalShards().join();
@@ -227,7 +213,7 @@ public class DiscordBotController {
 
 		api.setMessageCacheSize(cacheSize, cacheStorageTimeInSeconds);
 
-		if (isMessageIntent) {
+		if (intentType == IntentType.ALL) {
 			api.addMessageCreateListener(event -> {
 				DiscordMessageData dmd = new DiscordMessageData(event);
 
@@ -255,24 +241,27 @@ public class DiscordBotController {
 			});
 		}
 
-		api.addServerMemberJoinListener(event -> {
-			triggerEvent(new DiscordEventData(event, true));
-		});
-		api.addServerMemberLeaveListener(event -> {
-			triggerEvent(new DiscordEventData(event, false));
-		});
-		api.addServerChannelChangeOverwrittenPermissionsListener(event -> {
-			triggerEvent(new DiscordEventData(event, false));
-		});
-		api.addUserRoleAddListener(event -> {
-			triggerEvent(new DiscordEventData(event, true));
-		});
-		api.addUserRoleRemoveListener(event -> {
-			triggerEvent(new DiscordEventData(event, false));
-		});
+		if (intentType != IntentType.COMMANDONLY) {
+			api.addServerMemberJoinListener(event -> {
+				triggerEvent(new DiscordEventData(event, true));
+			});
+			api.addServerMemberLeaveListener(event -> {
+				triggerEvent(new DiscordEventData(event, false));
+			});
+			api.addServerChannelChangeOverwrittenPermissionsListener(event -> {
+				triggerEvent(new DiscordEventData(event, false));
+			});
+			api.addUserRoleAddListener(event -> {
+				triggerEvent(new DiscordEventData(event, true));
+			});
+			api.addUserRoleRemoveListener(event -> {
+				triggerEvent(new DiscordEventData(event, false));
+			});
 
-		api.addServerJoinListener(event -> event.getServer().getSystemChannel()
-				.ifPresent(channel -> channel.sendMessage(joinMessage)));
+			api.addServerJoinListener(event -> event.getServer().getSystemChannel()
+					.ifPresent(channel -> channel.sendMessage(joinMessage)));
+
+		}
 
 		Set<SlashCommandBuilder> builderList = new HashSet<>();
 	    for (IDiscordCommand command : commandList) {
@@ -331,6 +320,31 @@ public class DiscordBotController {
 	private void handleError(DiscordMessageData dmd, Throwable e) {
 		logger.error("error command:" + dmd.getText(), e);
 		dmd.getChannel().sendMessage("エラーが発生しました。Twitter ID:@kg_masashigeまで連絡してください。");
+	}
+
+	public enum IntentType {
+		ALL(
+				Intent.DIRECT_MESSAGES,
+				Intent.GUILDS,
+				Intent.GUILD_MESSAGES,
+				Intent.GUILD_MEMBERS,
+				Intent.GUILD_WEBHOOKS,
+				Intent.GUILD_INTEGRATIONS),
+		MEMBER_CHANGE(
+				Intent.GUILDS,
+				Intent.GUILD_MEMBERS,
+				Intent.GUILD_WEBHOOKS,
+				Intent.GUILD_INTEGRATIONS),
+		COMMANDONLY(
+				Intent.GUILD_MEMBERS);
+
+		Intent[] intents;
+		private IntentType(Intent... intents) {
+			this.intents = intents;
+		}
+		public Intent[] getIntents() {
+			return this.intents;
+		}
 	}
 
 }

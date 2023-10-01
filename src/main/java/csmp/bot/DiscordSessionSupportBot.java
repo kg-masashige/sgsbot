@@ -19,6 +19,7 @@ import csmp.bot.command.sgs.ScenarioClearCommand;
 import csmp.bot.command.sgs.ScenarioSendSecretCommand;
 import csmp.bot.command.sgs.ScenarioSetupCommand;
 import csmp.bot.controller.DiscordBotController;
+import csmp.bot.controller.DiscordBotController.IntentType;
 import csmp.bot.event.IDiscordEvent;
 import csmp.bot.event.schedule.ScheduleMemberChangeEvent;
 import csmp.service.BcDiceApiService;
@@ -66,7 +67,7 @@ public class DiscordSessionSupportBot {
 		}
 
 		String token = System.getenv("DISCORD_BOT_TOKEN");
-		boolean isMessageIntent = "true".equals(System.getenv("MESSAGE_INTENT"));
+		String intent = System.getenv("INTENT_TYPE");
 		List<Class<? extends IDiscordEvent>> daycordEventList = new ArrayList<>();
 		daycordEventList.add(ScheduleMemberChangeEvent.class);
 
@@ -81,8 +82,7 @@ public class DiscordSessionSupportBot {
 		Optional.ofNullable(System.getenv("SHARD_END_NO"))
 				.ifPresent(value -> daycordBot.setEnd(Integer.parseInt(value)));
 
-
-		daycordBot.execute(startMessage, isMessageIntent);
+		daycordBot.execute(startMessage, IntentType.valueOf(intent));
 
 	}
 
