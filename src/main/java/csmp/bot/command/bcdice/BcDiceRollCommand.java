@@ -77,7 +77,6 @@ public class BcDiceRollCommand implements IDiscordCommand, IDiscordSlashCommand 
 
 	@Override
 	public String getCommandName() {
-		// TODO 自動生成されたメソッド・スタブ
 		return "roll";
 	}
 
