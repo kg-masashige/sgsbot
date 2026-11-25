@@ -1,45 +1,32 @@
 package csmp.bot.command.help;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
-import org.javacord.api.interaction.SlashCommandBuilder;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
  * ヘルプコマンド.
  * @author kgmas
  *
  */
-public class HelpCommand implements IDiscordCommand,IDiscordSlashCommand {
+public class HelpCommand implements ISlashCommand {
 
-	private String message = "";
+	private final String message;
 
-	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if ((dmd.getText().startsWith("/sche") || dmd.getText().startsWith("/sgs"))
-				&& dmd.getText().contains("help")) {
-			return true;
+	public HelpCommand(List<ISlashCommand> commandList) {
+		StringBuilder sb = new StringBuilder(
+				"■コマンド一覧（<>は除いて実行してください。/を押してコマンド一覧が出てこない場合、botを承認し直す必要があります。）\r\n");
+		sb.append(createCommandHelp(getCommandHelpData()));
+		for (ISlashCommand command : commandList) {
+			sb.append(createCommandHelp(command.getCommandHelpData()));
 		}
-		if (dmd.getText().equals("/デイコードヘルプ")) {
-			return true;
-		}
-
-		return false;
-	}
-
-	public void setCommandList(List<IDiscordCommand> commandList) {
-		message = "■コマンド一覧（<>は除いて実行してください。/を押してコマンド一覧が出てこない場合、botを承認し直す必要があります。）\r\n";
-		message += createCommandHelp(getCommandHelpData());
-		for (IDiscordCommand command : commandList) {
-			CommandHelpData helpData = command.getCommandHelpData();
-			message += createCommandHelp(helpData);
-		}
+		message = sb.toString();
 	}
 
 	private String createCommandHelp(CommandHelpData helpData) {
@@ -64,40 +51,32 @@ public class HelpCommand implements IDiscordCommand,IDiscordSlashCommand {
 		return help;
 	}
 
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
+	/**
+	 * @return ヘルプのメッセージ
+	 */
+	public String getMessage() {
+		return message;
 	}
 
 	@Override
-	public void execute(DiscordMessageData dmd) {
-		DiscordUtil.sendMessage(message, dmd);
-	}
-
-	@Override
-	public void warning(DiscordMessageData dmd) {
+	public void execute(SlashCommandInteractionEvent event) {
+		DiscordUtil.reply(event, message, true);
 	}
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		return new CommandHelpData("/sgshelp もしくは /デイコードヘルプ", "コマンド一覧の表示。");
+		return new CommandHelpData("/sgshelp", "コマンド一覧の表示。");
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		return new SlashCommandBuilder().setName(getCommandName()).setDescription("ヘルプを表示します。");
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "ヘルプを表示します。")
+				.setContexts(InteractionContextType.GUILD);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "sgshelp";
 	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		dmd.setText("/sgshelp");
-		execute(dmd);
-	}
-
 
 }

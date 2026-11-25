@@ -1,75 +1,50 @@
 package csmp.bot.command.bcdice;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-
-import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.user.User;
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
+import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
- * 参加者全員のプロット（botに対するダイレクトメッセージ）を表示するコマンド.
+ * プロット値を設定するコマンド.
+ * 設定した値は /openplot で公開されるまで本人にしか見えない。
  * @author kgmas
  *
  */
-public class PlotSetCommand implements IDiscordCommand,IDiscordSlashCommand {
+public class PlotSetCommand implements ISlashCommand {
 
-	private static Map<Long, Long> userMessageIdMap = new ConcurrentHashMap<>();
-
-	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		return false;
-	}
+	private static final String OPTION_PLOT = "プロット値";
 
 	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
-	}
+	public void execute(SlashCommandInteractionEvent event) {
+		String value = event.getOption(OPTION_PLOT).getAsString();
+		String displayName = DiscordUtil.getDisplayName(event);
+		PlotOpenCommand.setPlot(event.getChannelIdLong(), event.getUser().getIdLong(), displayName, value);
 
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-	}
-
-	@Override
-	public void warning(DiscordMessageData dmd) {
+		event.reply(value + "をプロットしました。").setEphemeral(true).queue();
+		event.getChannel().sendMessage(displayName + "がプロットしました。").queue();
 	}
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		return new CommandHelpData("/plot", "プロットを行う。設定した値は公開されるまで自分しか見えない。");
+		return new CommandHelpData("/plot <プロット値>", "プロットを行う。設定した値は公開されるまで自分しか見えない。");
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("プロットの処理を行います。")
-				.addOption(SlashCommandOption.create(SlashCommandOptionType.STRING, "プロット値", "プロット値を指定してください。設定した値は/openplotで公開されるまであなたにしか見えません。",true))
-				;
-
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "プロットの処理を行います。")
+				.setContexts(InteractionContextType.GUILD)
+				.addOption(OptionType.STRING, OPTION_PLOT,
+						"プロット値を指定してください。設定した値は/openplotで公開されるまであなたにしか見えません。", true);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "plot";
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String message = dmd.getInteraction().getArgumentStringValueByIndex(0).orElse(null);
-		PlotOpenCommand.setPlot(dmd.getChannel().getId(), dmd.getUser().getId(), message);
-		dmd.getInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).setContent(message + "をプロットしました。").respond();
-
-		User user = dmd.getUser();
-		dmd.getChannel().sendMessage(user.getNickname(dmd.getGuild()).orElse(user.getName()) + "がプロットしました。");
 	}
 
 }

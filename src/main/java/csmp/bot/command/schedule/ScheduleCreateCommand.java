@@ -2,312 +2,58 @@ package csmp.bot.command.schedule;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.javacord.api.entity.channel.ServerChannel;
-import org.javacord.api.entity.channel.ServerForumChannel;
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.channel.ServerThreadChannel;
-import org.javacord.api.entity.permission.Role;
-import org.javacord.api.entity.user.User;
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandInteractionOption;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionChoice;
-import org.javacord.api.interaction.SlashCommandOptionType;
 
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.bot.model.ScheduleCommandData;
 import csmp.service.CsmpService;
 import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.attribute.IWebhookContainer;
+import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
  * スケジュール追加コマンド.
  * @author kgmas
  *
  */
-public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashCommand {
+public class ScheduleCreateCommand implements ISlashCommand {
 
 	/**
 	 * ロガー
 	 */
 	private static Logger logger = LogManager.getLogger(MethodHandles.lookup().lookupClass());
 
-	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
-		}
-		if (dmd.getCommandArray()[0].equals("/スケジュール")) {
-			return true;
-		}
+	private static final String OPTION_UNIT = "作成単位";
+	private static final String OPTION_ROLE = "ロール指定";
+	private static final String OPTION_CHANNEL = "通知先チャンネル";
+	private static final String OPTION_LINK = "紐付けurl";
+	private static final String OPTION_FORCE = "権限上書き";
+	private static final String OPTION_NO_MEMBER = "メンバーなし";
 
-		// チャンネル単位追加
-		if (dmd.getCommandArray()[0].equals("/スケジュールforCh")) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
-	}
-
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-
-		String roleName = null;
-		String webhookChannelName = null;
-		String linkUrl = null;
-
-		if (dmd.getCommandArray().length > 1) {
-			if (!"-role".equals(dmd.getCommandArray()[1])
-					&& !"-link".equals(dmd.getCommandArray()[1])
-					&& !"-force".equals(dmd.getCommandArray()[1])) {
-				webhookChannelName = dmd.getCommandArray()[1];
-			}
-			for (int i = 1; i < dmd.getCommandArray().length; i++) {
-				if ("-role".equals(dmd.getCommandArray()[i])) {
-					if (dmd.getCommandArray().length - 1 > i) {
-						roleName = dmd.getCommandArray()[i + 1];
-					} else {
-						DiscordUtil.sendMessage("ロール名を指定してください。", dmd);
-						return;
-					}
-				}
-				if ("-link".equals(dmd.getCommandArray()[i])) {
-					if (dmd.getCommandArray().length - 1 > i) {
-						linkUrl = dmd.getCommandArray()[i + 1];
-					} else {
-						DiscordUtil.sendMessage("紐付けたいデイコードのURLを指定してください。", dmd);
-						return;
-					}
-				}
-			}
-		}
-
-		Role role = null;
-		if (roleName != null) {
-			List<Role> roles = dmd.getGuild().getRolesByName(roleName);
-			if (!roles.isEmpty()) {
-				role = roles.get(0);
-			} else {
-				DiscordUtil.sendMessage(roleName + "のロールが見つかりません。", dmd);
-				return;
-			}
-		}
-
-		String webhookUrl = null;
-		ServerTextChannel webhookChannel = null;
-		if (webhookChannelName != null) {
-			// 通知先チャンネルを別にする。
-			List<ServerChannel> channelList = dmd.getGuild().getChannelsByName(webhookChannelName);
-			for (ServerChannel serverChannel : channelList) {
-				if (serverChannel instanceof ServerTextChannel) {
-					webhookChannel = (ServerTextChannel) serverChannel;
-					webhookUrl = DiscordUtil.getWebhookUrl(dmd, webhookChannel);
-					break;
-				}
-			}
-			if (webhookUrl == null) {
-				DiscordUtil.sendMessage(webhookChannelName + "のテキストチャンネルが見つかりません。", dmd);
-			}
-
-		} else {
-			webhookUrl = DiscordUtil.getWebhookUrl(dmd);
-		}
-
-		if (webhookUrl == null) {
-			return;
-		}
-
-		String guildId = dmd.getGuild().getIdAsString();
-		String serverName = dmd.getGuild().getName();
-		User authorUser = dmd.getUser();
-		String authorName = authorUser.getNickname(dmd.getGuild()).orElse(authorUser.getDisplayName(dmd.getGuild()));
-		String authorIdName = authorUser.getIdAsString() + ":" + authorName;
-
-		ServerTextChannel stc = null;
-		if (dmd.getCommandArray()[0].equals("/スケジュールforCh")
-				&& dmd.getChannel() instanceof ServerTextChannel) {
-			guildId += "#" + dmd.getChannel().getIdAsString();
-			stc = (ServerTextChannel) dmd.getChannel();
-			serverName += "#" + stc.getName();
-		}
-
-		Map<String, String> memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), stc, role);
-
-		logger.info("guildId:" + dmd.getGuild().getIdAsString() +
-				" member count:" + memberMap.size() +
-				" shard num:" + dmd.getGuild().getApi().getCurrentShard());
-
-		if (memberMap.isEmpty()) {
-			// メンバーの取得に失敗。再度コマンドを実行してもらうようにメッセージを送信。
-			DiscordUtil.sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。", dmd);
-			return;
-		}
-		List<String> userIdNameList = new ArrayList<>();
-		for (Entry<String, String> entry : memberMap.entrySet()) {
-			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
-		}
-
-		String roleId = null;
-		if (role != null) {
-			roleId = role.getIdAsString();
-			guildId += "&" + roleId;
-			serverName += "(" + roleName + ")";
-		}
-
-		Map<String, Object> result = null;
-		if (linkUrl == null) {
-			ScheduleCommandData scheduleData = new ScheduleCommandData();
-			scheduleData.setGuildId(guildId);
-			scheduleData.setServerName(serverName);
-			scheduleData.setWebhook(webhookUrl);
-			scheduleData.setAuthorIdName(authorIdName);
-			scheduleData.setUserIdNameList(userIdNameList);
-			scheduleData.setRoleId(roleId);
-			if (dmd.getInteraction() != null) {
-				scheduleData.setSlashCommand(true);
-			}
-
-			if ("-force".equals(dmd.getCommandArray()[dmd.getCommandArray().length - 1])) {
-				// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
-				User guildOwner = dmd.getGuild().getOwner().orElse(null);
-				if (!authorUser.getIdAsString().equals(guildOwner.getIdAsString())) {
-					DiscordUtil.sendMessage("権限上書きができるのは、Discordサーバの管理者だけです。", dmd);
-					return;
-				}
-				scheduleData.setForce(true);
-
-			}
-
-			result = CsmpService.getInstance().createScheduleAdjustment(scheduleData);
-		} else {
-			int keyStartIndex = linkUrl.indexOf("key=");
-			if (keyStartIndex < 0) {
-				DiscordUtil.sendMessage("入力されたURLがデイコードのURLではありません。", dmd);
-				return;
-			}
-
-			int keyEndIndex = linkUrl.indexOf("&", keyStartIndex);
-			if (keyEndIndex < 0) {
-				keyEndIndex = linkUrl.length();
-			}
-			String linkKey = linkUrl.substring(keyStartIndex + 4, keyEndIndex);
-			result = CsmpService.getInstance().linkScheduleAdjustment(guildId, webhookUrl, authorIdName, roleId,
-					linkKey);
-		}
-
-		if (result == null) {
-			DiscordUtil.sendMessage("エラーが発生しました。再度コマンドを実行してください。", dmd);
-		} else if (!"ok".equals(result.get("result"))) {
-			DiscordUtil.sendMessage(String.valueOf(result.get("error")), dmd);
-		} else {
-			if (result.containsKey("url")) {
-
-				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力し、日程登録ボタンを押してください。\n"
-						+ "日程登録ボタンを押した際に日程状況一覧ページをDiscordへ通知することで、他の参加者に日程調整用のページを通知できます。\n"
-						+ "[候補日設定用URL](" + result.get("url") + " )";
-
-				DiscordUtil.sendMessage(message, dmd);
-			}
-		}
-
-	}
-
-	@Override
-	public void warning(DiscordMessageData dmd) {
-	}
-
-	@Override
-	public CommandHelpData getCommandHelpData() {
-		List<CommandHelpData> list = new ArrayList<>();
-		list.add((new CommandHelpData("/schedule",
-				"日程調整用のページを作成する。以下の/スケジュールで始まるコマンドは旧コマンド。")));
-
-		list.add(new CommandHelpData("/スケジュール",
-				"日程調整用のページを作成する。",
-				"作成したページURLがチャンネルに通知される。"));
-		list.add(new CommandHelpData("/スケジュールforCh",
-				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
-				"コマンドは「/スケジュールforCh」固定。"));
-		list.add(new CommandHelpData("/スケジュール <通知先チャンネル名>",
-				"日程調整用のページを作成する。",
-				"作成したページURLが通知先チャンネルに通知される。（通知先チャンネル名がtestなら 「/スケジュール test」）"));
-		list.add(new CommandHelpData("/スケジュールforCh <通知先チャンネル名>",
-				"コマンドを発行したチャンネル単位に日程調整用のページを作成する。",
-				"作成したページURLが通知先チャンネルに通知される。（通知先チャンネル名がtestなら 「/スケジュールforCh test」）"));
-		list.add(new CommandHelpData("/スケジュール -role <ロール名>",
-				"日程調整用のページを作成する。",
-				"ロール名で指定したロールを持つユーザのみを参加者として登録する。「-role <ロール名>」は他のコマンドとの組み合わせも可能。"
-						+ "-role以降は一番最後に指定する。「/スケジュールforCh <通知先チャンネル名> -role <ロール名>」など。"));
-
-		return new CommandHelpData(list);
-	}
-
-	@Override
-	public SlashCommandBuilder entryCommand() {
-		SlashCommandOption createUnit = SlashCommandOption.createWithChoices(
-				SlashCommandOptionType.STRING, "作成単位",
-				"スケジュール調整用ページを作成する単位を選択します。", true,
-				Arrays.asList(
-						SlashCommandOptionChoice.create("チャンネル", CreateUnit.CHANNEL.name()),
-						SlashCommandOptionChoice.create("サーバー", CreateUnit.SERVER.name()),
-						SlashCommandOptionChoice.create("スレッド", CreateUnit.THREAD.name())));
-
-		SlashCommandOption role = SlashCommandOption.create(
-				SlashCommandOptionType.ROLE, "ロール指定",
-				"指定したロールに所属するメンバーだけで日程調整したい場合に指定してください。", false);
-
-		SlashCommandOption channel = SlashCommandOption.create(
-				SlashCommandOptionType.CHANNEL, "通知先チャンネル",
-				"通知先のチャンネルを変更したい場合に設定してください。", false);
-
-		SlashCommandOption link = SlashCommandOption.create(
-				SlashCommandOptionType.STRING, "紐付けurl",
-				"まだDiscordと紐付けていない日程調整用のページをこのチャンネルに紐付けたい場合にURLを指定してください。", false);
-
-		SlashCommandOption force = SlashCommandOption.createWithChoices(
-				SlashCommandOptionType.STRING, "権限上書き",
-				"他の人が作成した日程調整用のページを自分の権限で上書きしたい場合は指定してください。(サーバー管理者限定オプション）", false,
-				Arrays.asList(
-						SlashCommandOptionChoice.create("上書きする", CreateForce.FORCE.name())
-						)
-				);
-
-		SlashCommandOption noMember = SlashCommandOption.createWithChoices(
-				SlashCommandOptionType.STRING, "メンバーなし",
-				"自分以外のメンバーを追加せずにスケジュールを作成します。メンバーを手動で追加したい場合に設定してください。", false,
-				Arrays.asList(
-						SlashCommandOptionChoice.create("メンバーなし", CreateMembers.NO_MEMBER.name())
-						)
-				);
-
-
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("デイコードでスケジュール調整用のページを作成します。")
-				.addOption(createUnit)
-				.addOption(role)
-				.addOption(channel)
-				.addOption(link)
-				.addOption(force)
-				.addOption(noMember)
-				;
-	}
+	private static final String THREAD_ONLY_MESSAGE =
+			"フォーラムチャンネルやテキストチャンネルのスレッド内でコマンドを実行する場合、作成単位をスレッドにしてください。\n"
+			+ "ボイスチャンネルのチャットなどでは実行できません。";
 
 	public enum CreateUnit {
 		CHANNEL, SERVER, THREAD
@@ -322,128 +68,143 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 	}
 
 	@Override
+	public CommandHelpData getCommandHelpData() {
+		return new CommandHelpData("/schedule",
+				"日程調整用のページを作成する。",
+				"作成単位（チャンネル・サーバー・スレッド）、ロール、通知先チャンネルなどを指定できる。");
+	}
+
+	@Override
+	public SlashCommandData createCommandData() {
+		OptionData createUnit = new OptionData(OptionType.STRING, OPTION_UNIT,
+				"スケジュール調整用ページを作成する単位を選択します。", true)
+				.addChoice("チャンネル", CreateUnit.CHANNEL.name())
+				.addChoice("サーバー", CreateUnit.SERVER.name())
+				.addChoice("スレッド", CreateUnit.THREAD.name());
+		OptionData role = new OptionData(OptionType.ROLE, OPTION_ROLE,
+				"指定したロールに所属するメンバーだけで日程調整したい場合に指定してください。", false);
+		OptionData channel = new OptionData(OptionType.CHANNEL, OPTION_CHANNEL,
+				"通知先のチャンネルを変更したい場合に設定してください。", false);
+		OptionData link = new OptionData(OptionType.STRING, OPTION_LINK,
+				"まだDiscordと紐付けていない日程調整用のページをこのチャンネルに紐付けたい場合にURLを指定してください。", false);
+		OptionData force = new OptionData(OptionType.STRING, OPTION_FORCE,
+				"他の人が作成した日程調整用のページを自分の権限で上書きしたい場合は指定してください。(サーバー管理者限定オプション）", false)
+				.addChoice("上書きする", CreateForce.FORCE.name());
+		OptionData noMember = new OptionData(OptionType.STRING, OPTION_NO_MEMBER,
+				"自分以外のメンバーを追加せずにスケジュールを作成します。メンバーを手動で追加したい場合に設定してください。", false)
+				.addChoice("メンバーなし", CreateMembers.NO_MEMBER.name());
+
+		return Commands.slash(getCommandName(), "デイコードでスケジュール調整用のページを作成します。")
+				.setContexts(InteractionContextType.GUILD)
+				.addOptions(createUnit, role, channel, link, force, noMember);
+	}
+
+	@Override
 	public String getCommandName() {
 		return "schedule";
 	}
 
 	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		SlashCommandInteraction interaction = dmd.getInteraction();
-		List<SlashCommandInteractionOption> options = interaction.getOptions();
+	public void execute(SlashCommandInteractionEvent event) {
+		// webhookの取得やデイコードへの登録に時間がかかるため、先に応答を保留する。
+		event.deferReply(true).queue();
+		InteractionHook hook = event.getHook();
+		Guild guild = event.getGuild();
 
-		Map<String, SlashCommandInteractionOption> optionMap = new HashMap<>();
-		for (SlashCommandInteractionOption option : options) {
-			optionMap.put(option.getName(), option);
+		StandardGuildMessageChannel webhookChannel = null;
+		OptionMapping noticeChannelOption = event.getOption(OPTION_CHANNEL);
+		if (noticeChannelOption != null
+				&& noticeChannelOption.getAsChannel() instanceof StandardGuildMessageChannel noticeChannel) {
+			webhookChannel = noticeChannel;
 		}
 
-		ServerTextChannel webhookChannel = null;
-		SlashCommandInteractionOption noticeChannelOption = optionMap.get("通知先チャンネル");
-		if (noticeChannelOption != null) {
-			ServerChannel noticeChannel = noticeChannelOption.getChannelValue().orElse(null);
-			if (noticeChannel != null && noticeChannel instanceof ServerTextChannel) {
-				webhookChannel = (ServerTextChannel) noticeChannel;
-			}
-		}
+		OptionMapping roleOption = event.getOption(OPTION_ROLE);
+		Role role = roleOption != null ? roleOption.getAsRole() : null;
 
-		Role role = null;
-		SlashCommandInteractionOption roleOption = optionMap.get("ロール指定");
-		if (roleOption != null) {
-			role = roleOption.getRoleValue().orElse(null);
-		}
+		OptionMapping linkOption = event.getOption(OPTION_LINK);
+		String linkUrl = linkOption != null ? linkOption.getAsString() : null;
 
-		String linkUrl = null;
-		SlashCommandInteractionOption linkOption = optionMap.get("紐付けurl");
-		if (linkOption != null) {
-			linkUrl = linkOption.getStringValue().orElse(null);
-		}
+		OptionMapping forceOption = event.getOption(OPTION_FORCE);
+		boolean isForce = forceOption != null
+				&& CreateForce.valueOf(forceOption.getAsString()) == CreateForce.FORCE;
 
-		boolean isForce = false;
-		SlashCommandInteractionOption forceOption = optionMap.get("権限上書き");
-		if (forceOption != null) {
-			String createForceValue = forceOption.getStringValue().orElse(null);
-			CreateForce forceType = CreateForce.valueOf(createForceValue);
+		OptionMapping noMemberOption = event.getOption(OPTION_NO_MEMBER);
+		boolean isNoMember = noMemberOption != null
+				&& CreateMembers.valueOf(noMemberOption.getAsString()) == CreateMembers.NO_MEMBER;
 
-			if (forceType == CreateForce.FORCE) {
-				isForce = true;
-			}
-		}
-
-		boolean isNoMember = false;
-		SlashCommandInteractionOption noMemberOption = optionMap.get("メンバーなし");
-		if (noMemberOption != null) {
-			String createNoMemberValue = noMemberOption.getStringValue().orElse(null);
-			CreateMembers membersType = CreateMembers.valueOf(createNoMemberValue);
-
-			if (membersType == CreateMembers.NO_MEMBER) {
-				isNoMember = true;
-			}
-		}
-
-		String guildId = dmd.getGuild().getIdAsString();
-		String serverName = dmd.getGuild().getName();
-		User authorUser = dmd.getUser();
-		String authorName = authorUser.getNickname(dmd.getGuild()).orElse(authorUser.getDisplayName(dmd.getGuild()));
-		String authorIdName = authorUser.getIdAsString() + ":" + authorName;
+		String guildId = guild.getId();
+		String serverName = guild.getName();
+		User authorUser = event.getUser();
+		String authorName = DiscordUtil.getDisplayName(event);
+		String authorIdName = authorUser.getId() + ":" + authorName;
 
 		// 作成単位の確定
-		SlashCommandInteractionOption createUnitOption = optionMap.get("作成単位");
-		String createUnitValue = createUnitOption.getStringValue().get();
-		CreateUnit createUnit = CreateUnit.valueOf(createUnitValue);
+		CreateUnit createUnit = CreateUnit.valueOf(event.getOption(OPTION_UNIT).getAsString());
 
 		// スレッド、サーバテキストそれぞれの処理
-		ServerChannel channel = (ServerChannel) dmd.getChannel();
-		ServerTextChannel textChannel = null;
-		ServerForumChannel forumChannel = null;
+		GuildChannel channel = event.getGuildChannel();
+		StandardGuildMessageChannel textChannel = null;
+		ForumChannel forumChannel = null;
+		ThreadChannel threadChannel = null;
 		String threadId = null;
-		String webhookUrl = null;
 
-		// serverTextChannelであればそのまま取得する。
-		textChannel = channel.asServerTextChannel().orElse(null);
-		ServerThreadChannel threadChannel = channel.asServerThreadChannel().orElse(null);
-
-		if (threadChannel != null) {
-			textChannel = threadChannel.getParent().asServerTextChannel().orElse(null);
-			forumChannel = threadChannel.getParent().asServerForumChannel().orElse(null);
-			threadId = threadChannel.getIdAsString();
+		// テキストチャンネルであればそのまま取得する。
+		if (channel instanceof StandardGuildMessageChannel standardChannel) {
+			textChannel = standardChannel;
+		}
+		if (channel instanceof ThreadChannel thread) {
+			threadChannel = thread;
+			threadId = thread.getId();
+			if (thread.getParentChannel() instanceof StandardGuildMessageChannel parentText) {
+				textChannel = parentText;
+			} else if (thread.getParentChannel() instanceof ForumChannel parentForum) {
+				forumChannel = parentForum;
+			}
 		}
 
 		Map<String, String> memberMap = null;
 		if (isNoMember) {
 			memberMap = new HashMap<>();
-			memberMap.put(authorUser.getIdAsString(), authorName);
+			memberMap.put(authorUser.getId(), authorName);
 		} else if (textChannel != null) {
-			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), textChannel, role);
+			memberMap = DiscordUtil.getMemberIdMap(guild, textChannel, role);
 		} else if (forumChannel != null) {
-			memberMap = DiscordUtil.getMemberIdMap(dmd.getGuild(), forumChannel, role);
+			memberMap = DiscordUtil.getMemberIdMap(guild, forumChannel, role);
 		}
 
 		switch (createUnit) {
 		case THREAD:
 			if (threadId == null) {
-				DiscordUtil.sendMessage("スレッド単位で実施する場合、スレッド内でコマンドを実行してください。", dmd, true);
+				DiscordUtil.sendMessage(hook, "スレッド単位で実施する場合、スレッド内でコマンドを実行してください。");
 				return;
 			}
 			if (textChannel != null) {
-				guildId += "#" + textChannel.getIdAsString() + "/" + threadId;
+				guildId += "#" + textChannel.getId() + "/" + threadId;
 				serverName += "#" + textChannel.getName() + "/" + threadChannel.getName();
 			} else if (forumChannel != null) {
-				guildId += "#" + forumChannel.getIdAsString() + "/" + threadId;
+				guildId += "#" + forumChannel.getId() + "/" + threadId;
 				serverName += "#" + forumChannel.getName() + "/" + threadChannel.getName();
 			}
-
 			break;
 		case CHANNEL:
 			if (textChannel == null) {
-				DiscordUtil.sendMessage("チャンネル単位で実施する場合、テキストチャンネル内でコマンドを実行してください。", dmd, true);
+				DiscordUtil.sendMessage(hook, "チャンネル単位で実施する場合、テキストチャンネル内でコマンドを実行してください。");
 				return;
 			}
-			guildId += "#" + textChannel.getIdAsString();
+			if (threadChannel != null) {
+				DiscordUtil.sendMessage(hook, THREAD_ONLY_MESSAGE);
+				return;
+			}
+			guildId += "#" + textChannel.getId();
 			serverName += "#" + textChannel.getName();
-
 			break;
 		case SERVER:
 			if (textChannel == null) {
-				DiscordUtil.sendMessage("サーバー単位で実施する場合、テキストチャンネル内でコマンドを実行してください。", dmd, true);
+				DiscordUtil.sendMessage(hook, "サーバー単位で実施する場合、テキストチャンネル内でコマンドを実行してください。");
+				return;
+			}
+			if (threadChannel != null) {
+				DiscordUtil.sendMessage(hook, THREAD_ONLY_MESSAGE);
 				return;
 			}
 			break;
@@ -451,34 +212,33 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			break;
 		}
 
+		String webhookUrl = null;
 		if (webhookChannel != null) {
 			// 通知先チャンネルを別にする。
-			webhookUrl = DiscordUtil.getWebhookUrl(dmd, webhookChannel);
-		} else {
-			if (createUnit == CreateUnit.THREAD) {
-				if (forumChannel != null) {
-					webhookUrl = DiscordUtil.getWebhookUrl(dmd, forumChannel, threadId);
-				} else {
-					webhookUrl = DiscordUtil.getWebhookUrl(dmd, textChannel, threadId);
-				}
-			} else {
-				webhookUrl = DiscordUtil.getWebhookUrl(dmd);
+			webhookUrl = DiscordUtil.getWebhookUrl(hook, webhookChannel);
+		} else if (createUnit == CreateUnit.THREAD) {
+			IWebhookContainer parent = forumChannel != null ? forumChannel : textChannel;
+			if (parent == null) {
+				DiscordUtil.sendMessage(hook, "このスレッドでは実行できません。");
+				return;
 			}
+			webhookUrl = DiscordUtil.getWebhookUrl(hook, parent, threadId);
+		} else {
+			webhookUrl = DiscordUtil.getWebhookUrl(hook, textChannel);
 		}
-
 		if (webhookUrl == null) {
 			return;
 		}
 
-		logger.info("guildId:" + dmd.getGuild().getIdAsString() +
-				" member count:" + memberMap.size() +
-				" shard num:" + dmd.getGuild().getApi().getCurrentShard());
-
-		if (memberMap.isEmpty()) {
+		if (memberMap == null || memberMap.isEmpty()) {
 			// メンバーの取得に失敗。再度コマンドを実行してもらうようにメッセージを送信。
-			DiscordUtil.sendMessage("メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。", dmd);
+			DiscordUtil.sendMessage(hook, "メンバー情報の取得に失敗しました。時間をおいて再度コマンドを実行してください。");
 			return;
 		}
+		logger.info("guildId:" + guild.getId() +
+				" member count:" + memberMap.size() +
+				" shard num:" + event.getJDA().getShardInfo().getShardId());
+
 		List<String> userIdNameList = new ArrayList<>();
 		for (Entry<String, String> entry : memberMap.entrySet()) {
 			userIdNameList.add(entry.getKey() + ":" + entry.getValue());
@@ -486,7 +246,7 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 
 		String roleId = null;
 		if (role != null) {
-			roleId = role.getIdAsString();
+			roleId = role.getId();
 			guildId += "&" + roleId;
 			serverName += "(" + role.getName() + ")";
 		}
@@ -500,51 +260,57 @@ public class ScheduleCreateCommand implements IDiscordCommand, IDiscordSlashComm
 			scheduleData.setAuthorIdName(authorIdName);
 			scheduleData.setUserIdNameList(userIdNameList);
 			scheduleData.setRoleId(roleId);
-			if (dmd.getInteraction() != null) {
-				scheduleData.setSlashCommand(true);
-			}
+			scheduleData.setSlashCommand(true);
 
 			if (isForce) {
-				// 末尾が-forceの場合、サーバオーナーかどうかを確認する。
-				User guildOwner = dmd.getGuild().getOwner().orElse(null);
-				if (!authorUser.getIdAsString().equals(guildOwner.getIdAsString())) {
-					DiscordUtil.sendMessage("権限上書きができるのは、Discordサーバの管理者だけです。", dmd);
+				// 権限上書きは、サーバオーナーのみ可能。
+				if (!authorUser.getId().equals(guild.getOwnerId())) {
+					DiscordUtil.sendMessage(hook, "権限上書きができるのは、Discordサーバの管理者だけです。");
 					return;
 				}
 				scheduleData.setForce(true);
-
 			}
 
 			result = CsmpService.getInstance().createScheduleAdjustment(scheduleData);
 		} else {
-			int keyStartIndex = linkUrl.indexOf("key=");
-			if (keyStartIndex < 0) {
-				DiscordUtil.sendMessage("入力されたURLがデイコードのURLではありません。", dmd);
+			String linkKey = getLinkKey(linkUrl);
+			if (linkKey == null) {
+				DiscordUtil.sendMessage(hook, "入力されたURLがデイコードのURLではありません。");
 				return;
 			}
-
-			int keyEndIndex = linkUrl.indexOf("&", keyStartIndex);
-			if (keyEndIndex < 0) {
-				keyEndIndex = linkUrl.length();
-			}
-			String linkKey = linkUrl.substring(keyStartIndex + 4, keyEndIndex);
 			result = CsmpService.getInstance().linkScheduleAdjustment(guildId, webhookUrl, authorIdName, roleId,
 					linkKey);
 		}
 
 		if (result == null) {
-			DiscordUtil.sendMessage("エラーが発生しました。再度コマンドを実行してください。", dmd);
+			DiscordUtil.sendMessage(hook, "エラーが発生しました。再度コマンドを実行してください。");
 		} else if (!"ok".equals(result.get("result"))) {
-			DiscordUtil.sendMessage(String.valueOf(result.get("error")), dmd);
+			DiscordUtil.sendMessage(hook, String.valueOf(result.get("error")));
+		} else if (result.containsKey("url")) {
+			String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力し、日程登録ボタンを押してください。\n"
+					+ "日程登録ボタンを押した際に日程状況一覧ページをDiscordへ通知することで、他の参加者に日程調整用のページを通知できます。\n"
+					+ "[候補日設定用URL](" + result.get("url") + " )";
+			DiscordUtil.sendMessage(hook, message);
 		} else {
-			if (result.containsKey("url")) {
-
-				String message = "デイコードを設定しました。下記URLから調整する候補日の日程を入力し、日程登録ボタンを押してください。\n"
-						+ "日程登録ボタンを押した際に日程状況一覧ページをDiscordへ通知することで、他の参加者に日程調整用のページを通知できます。\n"
-						+ "[候補日設定用URL](" + result.get("url") + " )";
-
-				DiscordUtil.sendMessage(message, dmd);
-			}
+			DiscordUtil.sendMessage(hook, "デイコードを設定しました。");
 		}
 	}
+
+	/**
+	 * デイコードのURLからキーを取り出す.
+	 * @param linkUrl デイコードのURL
+	 * @return キー. URLに key= が含まれない場合はnull.
+	 */
+	public static String getLinkKey(String linkUrl) {
+		int keyStartIndex = linkUrl.indexOf("key=");
+		if (keyStartIndex < 0) {
+			return null;
+		}
+		int keyEndIndex = linkUrl.indexOf("&", keyStartIndex);
+		if (keyEndIndex < 0) {
+			keyEndIndex = linkUrl.length();
+		}
+		return linkUrl.substring(keyStartIndex + 4, keyEndIndex);
+	}
+
 }

@@ -11,13 +11,13 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.permission.Role;
 
 import csmp.bot.event.IDiscordEvent;
 import csmp.bot.model.DiscordEventData;
 import csmp.service.CsmpService;
 import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 public class ScheduleMemberChangeEvent implements IDiscordEvent {
 
@@ -44,7 +44,7 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 	@Override
 	public void execute(DiscordEventData ded) throws InterruptedException, ExecutionException {
 		// デイコードから情報を取得する。
-		String guildId = ded.getGuild().getIdAsString();
+		String guildId = ded.getGuild().getId();
 
 		if (!checkGuildId(guildId)) {
 			return;
@@ -108,16 +108,23 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 				channelId = ids[1];
 			}
 
-			ServerTextChannel stc = null;
+			TextChannel stc = null;
 			if (channelId != null) {
-				stc = ded.getGuild().getTextChannelById(channelId).orElse(null);
+				if (!isSnowflake(channelId)) {
+					// スレッド単位（チャンネルID/スレッドID）は同期の対象外（javacord版と同じ）。
+					continue;
+				}
+				stc = ded.getGuild().getTextChannelById(channelId);
 				if (stc == null) {
 					continue;
 				}
 			}
 			Role role = null;
 			if (roleId != null) {
-				role = ded.getGuild().getRoleById(roleId).orElse(null);
+				if (!isSnowflake(roleId)) {
+					continue;
+				}
+				role = ded.getGuild().getRoleById(roleId);
 				if (role == null) {
 					continue;
 				}
@@ -167,6 +174,10 @@ public class ScheduleMemberChangeEvent implements IDiscordEvent {
 			updateSessionMap.put(entry.getKey(), updateMap);
 		}
 		return updateSessionMap;
+	}
+
+	private static boolean isSnowflake(String id) {
+		return !id.isEmpty() && id.chars().allMatch(Character::isDigit);
 	}
 
 }

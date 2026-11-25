@@ -1,99 +1,74 @@
 package csmp.bot.command.bcdice;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandInteractionOption;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
+import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
  * ダイスボット実行コマンド.
+ * オリジナル表（/sgstable）に登録したコマンドと一致した場合は、表を振る。
  * @author kgmas
  *
  */
-public class BcDiceRollCommand implements IDiscordCommand, IDiscordSlashCommand {
+public class BcDiceRollCommand implements ISlashCommand {
+
+	private static final String OPTION_COMMAND = "コマンド";
 
 	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
+	public void execute(SlashCommandInteractionEvent event) {
+		String commandText = event.getOption(OPTION_COMMAND).getAsString();
+		event.reply("判定:" + commandText).queue();
+
+		BcDiceApiService service = BcDiceApiService.getInstance();
+		long guildId = event.getGuild().getIdLong();
+		String result = service.rollTable(guildId, commandText);
+		if (result == null) {
+			result = service.rollDice(commandText, guildId);
 		}
-		return true;
-	}
-
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
-	}
-
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String result = BcDiceApiService.getInstance().rollDice(dmd.getText(), dmd.getGuild().getId());
-
-		if (result != null) {
-			dmd.getChannel().sendMessage(
-					new EmbedBuilder().setAuthor(
-							dmd.getUser().getDisplayName(dmd.getGuild()),
-							null,
-							dmd.getUser().getEffectiveAvatar(dmd.getGuild()))
-						.addField(dmd.getText(), result)
-					);
+		if (result == null) {
+			// ダイスのコマンドとして解釈できない場合は何もしない。
+			return;
 		}
 
+		EmbedBuilder embed = new EmbedBuilder()
+				.setAuthor(DiscordUtil.getDisplayName(event), null, getAvatarUrl(event))
+				.addField(DiscordUtil.truncate(commandText, MessageEmbed.TITLE_MAX_LENGTH),
+						DiscordUtil.truncate(result, MessageEmbed.VALUE_MAX_LENGTH), false);
+		event.getChannel().sendMessageEmbeds(embed.build()).queue();
 	}
 
-	@Override
-	public void warning(DiscordMessageData dmd) {
+	private String getAvatarUrl(SlashCommandInteractionEvent event) {
+		if (event.getMember() != null) {
+			return event.getMember().getEffectiveAvatarUrl();
+		}
+		return event.getUser().getEffectiveAvatarUrl();
 	}
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"/roll DiceBotコマンド(2D6など) (旧コマンド：コマンドなし)",
-				"ダイスボットのコマンドを実行する。シークレットダイスは対応していない。");
+				"/roll <DiceBotコマンド(2D6など)>",
+				"ダイスボットのコマンドを実行する。/sgstableで登録したコマンドを指定すると表を振る。シークレットダイスは対応していない。");
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		SlashCommandOption command = SlashCommandOption.create(
-				SlashCommandOptionType.STRING, "コマンド",
-				"BCDiceで判定したいコマンドを指定してください。", true);
-
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("BCDiceを使用して判定します。")
-				.addOption(command)
-				;
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "BCDiceを使用して判定します。")
+				.setContexts(InteractionContextType.GUILD)
+				.addOption(OptionType.STRING, OPTION_COMMAND, "BCDiceで判定したいコマンドを指定してください。", true);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "roll";
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-
-		SlashCommandInteraction interaction = dmd.getInteraction();
-		List<SlashCommandInteractionOption> options = interaction.getOptions();
-
-		String commandText = options.get(0).getStringValue().orElse("");
-
-		interaction.createImmediateResponder().setContent("判定:" + commandText).respond();
-
-		dmd.setText(commandText);
-
-		execute(dmd);
-
 	}
 
 }

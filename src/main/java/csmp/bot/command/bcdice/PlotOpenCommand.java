@@ -1,141 +1,95 @@
 package csmp.bot.command.bcdice;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
-import org.javacord.api.entity.user.User;
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.callback.InteractionImmediateResponseBuilder;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
+import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
- * 参加者全員のプロット（botに対するダイレクトメッセージ）を表示するコマンド.
+ * チャンネルでプロットされた値を公開するコマンド.
  * @author kgmas
  *
  */
-public class PlotOpenCommand implements IDiscordCommand,IDiscordSlashCommand {
+public class PlotOpenCommand implements ISlashCommand {
 
-	private static Map<Long, Long> userMessageIdMap = new ConcurrentHashMap<>();
+	/**
+	 * チャンネルID → (ユーザーID → プロット)
+	 */
+	private static final Map<Long, Map<Long, Plot>> plotMap = new ConcurrentHashMap<>();
 
-	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
-		}
-		if (dmd.getText().equalsIgnoreCase("/plot open") || dmd.getText().equalsIgnoreCase("/plot who")) {
-			return true;
-		}
-
-		return false;
+	private record Plot(String displayName, String value) {
 	}
 
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
+	/**
+	 * プロット値を設定する. 同じユーザーが再度プロットした場合は上書きする.
+	 * @param channelId チャンネルID
+	 * @param userId ユーザーID
+	 * @param displayName 表示名
+	 * @param value プロット値
+	 */
+	public static void setPlot(long channelId, long userId, String displayName, String value) {
+		Map<Long, Plot> map = plotMap.computeIfAbsent(channelId, key -> new LinkedHashMap<>());
+		synchronized (map) {
+			map.put(userId, new Plot(displayName, value));
+		}
 	}
 
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-
-		List<String> list = new ArrayList<>();
-		for (User user : dmd.getGuild().getEveryoneRole().getUsers()) {
-			user.getPrivateChannel().ifPresent(channel ->
-				{
-					try {
-						// 最新のメッセージを取得する。
-						// 最新のメッセージがユーザIDをキーにした最新のメッセージIDと一致したら無視する。
-						channel.getMessages(1).get().getNewestMessage().ifPresent(message -> {
-							Long messageId = userMessageIdMap.get(user.getId());
-							if (messageId == null || messageId != message.getId()) {
-								if ("who".equals(dmd.getCommandArray()[1])) {
-									list.add(user.getDisplayName(dmd.getGuild()) + " : プロット済");
-								} else {
-									list.add(user.getDisplayName(dmd.getGuild()) + " : " + message.getContent());
-									userMessageIdMap.put(user.getId(), message.getId());
-
-								}
-							}
-						});
-					} catch (InterruptedException | ExecutionException e) {
-						e.printStackTrace();
-					}
-				}
-			);
+	/**
+	 * チャンネルのプロット値を取り出して消去する.
+	 * @param channelId チャンネルID
+	 * @return 公開するメッセージ. プロットされていない場合はnull.
+	 */
+	public static String takePlots(long channelId) {
+		Map<Long, Plot> map = plotMap.remove(channelId);
+		if (map == null) {
+			return null;
 		}
-
-		String text = "■プロット";
-		if (!list.isEmpty()) {
-			for (String message : list) {
-				text += "\r\n" + message;
+		StringBuilder sb = new StringBuilder("■プロット");
+		synchronized (map) {
+			if (map.isEmpty()) {
+				return null;
 			}
-		} else {
-			text += "\r\n誰もプロットしていません。";
+			for (Plot plot : map.values()) {
+				sb.append("\n").append(plot.displayName()).append(":").append(plot.value());
+			}
 		}
-		dmd.getChannel().sendMessage(text);
-
+		return sb.toString();
 	}
 
 	@Override
-	public void warning(DiscordMessageData dmd) {
+	public void execute(SlashCommandInteractionEvent event) {
+		String message = takePlots(event.getChannelIdLong());
+		if (message == null) {
+			event.reply("プロットされていません。").queue();
+			return;
+		}
+		event.reply("プロット値を公開します。").queue();
+		DiscordUtil.sendToChannel(event.getChannel(), message);
 	}
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
-		List<CommandHelpData> list = new ArrayList<>();
-		list.add(new CommandHelpData(
-				"/openplot (旧コマンド：/plot open)",
-				"参加者がこのチャンネルでプロットした値を公開する。"));
-
-		return new CommandHelpData(list);
+		return new CommandHelpData(
+				"/openplot",
+				"参加者がこのチャンネルでプロットした値を公開する。");
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("プロットされた値を公開します。");
-
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "プロットされた値を公開します。")
+				.setContexts(InteractionContextType.GUILD);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "openplot";
-	}
-
-	private static Map<Long, Map<Long, String>> plotMap = new ConcurrentHashMap<>();
-
-	public static synchronized void setPlot(long channelId, long userId, String message) {
-		Map<Long, String> map = plotMap.get(channelId);
-		if (map == null) {
-			map = new ConcurrentHashMap<>();
-			plotMap.put(channelId, map);
-		}
-		map.put(userId, message);
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		Map<Long, String> map = plotMap.get(dmd.getChannel().getId());
-		InteractionImmediateResponseBuilder responder = dmd.getInteraction().createImmediateResponder();
-		if (map == null) {
-			responder.setContent("プロットされていません。").respond();
-			return;
-		}
-		responder.setContent("プロット値を公開します。").respond();
-
-		for (User user : dmd.getGuild().getMembers()) {
-			String message = map.get(user.getId());
-			if (message != null) {
-				dmd.getChannel().sendMessage(user.getNickname(dmd.getGuild()).orElse(user.getName()) + ":" + message);
-				plotMap.remove(user.getId());
-			}
-		}
 	}
 
 }

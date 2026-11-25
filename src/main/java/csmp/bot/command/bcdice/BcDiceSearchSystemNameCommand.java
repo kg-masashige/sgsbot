@@ -5,123 +5,83 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandInteractionOption;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.service.BcDiceApiService;
 import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
- * ダイスボットシステム説明取得コマンド.
+ * ダイスボットシステム名検索コマンド.
  * @author kgmas
  *
  */
-public class BcDiceSearchSystemNameCommand implements IDiscordCommand,IDiscordSlashCommand {
+public class BcDiceSearchSystemNameCommand implements ISlashCommand {
+
+	private static final String OPTION_FRAGMENT = "システム名の一部";
 
 	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
-		}
-		if (dmd.getText().startsWith("/search systemname ")) {
-			return true;
+	public void execute(SlashCommandInteractionEvent event) {
+		String input = event.getOption(OPTION_FRAGMENT).getAsString().trim();
+		if (input.isEmpty()) {
+			event.reply("検索したい文字列が設定されていません。").setEphemeral(true).queue();
+			return;
 		}
 
-		return false;
+		List<String> resultList = search(BcDiceApiService.getInstance().getSystemNames(), input);
+		if (resultList.isEmpty()) {
+			event.reply("指定された名前で見つかりませんでした。" + input).setEphemeral(true).queue();
+		} else {
+			String message = "■システム名（検索結果）：\n" + String.join("\n", resultList);
+			DiscordUtil.reply(event, message, true);
+		}
 	}
 
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		if (dmd.getCommandArray().length < 3) {
-			return false;
-		}
-		if (dmd.getCommandArray()[2].length() == 0) {
-			return false;
-		}
-
-		return true;
-	}
-
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String fragment = Normalizer.normalize(dmd.getCommandArray()[2], Normalizer.Form.NFKC);
-		fragment = fragment.toLowerCase();
-
-		BcDiceApiService bcDiceApi = BcDiceApiService.getInstance();
-		Map<String, String> systemNames = bcDiceApi.getSystemNames();
+	/**
+	 * システム名を部分一致で検索する. IDと表示名をNFKC正規化・小文字化して比較する.
+	 * @param systemNames システムID → 表示名
+	 * @param input 検索文字列
+	 * @return 一致したシステムの表示名
+	 */
+	public static List<String> search(Map<String, String> systemNames, String input) {
+		String fragment = normalize(input);
 		List<String> resultList = new ArrayList<>();
 		for (Entry<String, String> entry : systemNames.entrySet()) {
-			String systemId = Normalizer.normalize(entry.getKey(), Normalizer.Form.NFKC);
-			String systemName = Normalizer.normalize(entry.getValue(), Normalizer.Form.NFKC);
-
-			if (systemId.toLowerCase().contains(fragment) ||
-					systemName.toLowerCase().contains(fragment)) {
+			if (normalize(entry.getKey()).contains(fragment) ||
+					normalize(entry.getValue()).contains(fragment)) {
 				resultList.add(entry.getValue());
 			}
 		}
-
-		if (resultList.isEmpty()) {
-			DiscordUtil.sendMessage("指定された名前で見つかりませんでした。" + dmd.getCommandArray()[2], dmd);
-		} else {
-			String message = "■システム名（検索結果）：\n";
-			for (String systemName : resultList) {
-				message += systemName + "\n";
-			}
-			DiscordUtil.sendMessage(message, dmd);
-		}
-
+		return resultList;
 	}
 
-	@Override
-	public void warning(DiscordMessageData dmd) {
-		dmd.getChannel().sendMessage("検索したい文字列が設定されていません。/search systemname <システム名の一部>で発言してください。");
+	private static String normalize(String text) {
+		return Normalizer.normalize(text, Normalizer.Form.NFKC).toLowerCase();
 	}
 
 	@Override
 	public CommandHelpData getCommandHelpData() {
 		return new CommandHelpData(
-				"/bcdicesearch <システム名の一部（ビガミ、shinobi）など> (旧コマンド：/search systemname)",
+				"/bcdicesearch <システム名の一部（ビガミ、shinobi）など>",
 				"ダイスボットで指定できるシステム名を検索する。（部分一致検索）");
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		SlashCommandOption systemName = SlashCommandOption.create(
-				SlashCommandOptionType.STRING, "システム名の一部",
-				"BCDiceのシステム名（ソード、シノビなど）を指定してください。（部分一致検索）", true);
-
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("bcdicesetで指定するためのシステム名のフルネームを検索します。")
-				.addOption(systemName)
-				;
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "bcdicesetで指定するためのシステム名のフルネームを検索します。")
+				.setContexts(InteractionContextType.GUILD)
+				.addOption(OptionType.STRING, OPTION_FRAGMENT,
+						"BCDiceのシステム名（ソード、シノビなど）を指定してください。（部分一致検索）", true);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "bcdicesearch";
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		SlashCommandInteraction interaction = dmd.getInteraction();
-		List<SlashCommandInteractionOption> options = interaction.getOptions();
-
-		String systemName = options.get(0).getStringValue().orElse("");
-
-		String commandText = "/search systemname " + systemName;
-
-		dmd.setText(commandText);
-
-		execute(dmd);
 	}
 
 }

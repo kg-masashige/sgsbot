@@ -58,6 +58,10 @@ botを参加させたサーバで以下の通り発言してください。
 
 などとコマンドを半角で入力することでダイスを振ることができます。
 
+#### オリジナル表
+「/sgstable 登録」を実行すると入力画面が開きます。反応させるコマンド、ダイス、表の名前、結果一覧（1行に「ダイスの結果:出力したい文章」）を入力して登録してください。<br>
+登録後は「/roll <反応させるコマンド>」で表を振ることができます。登録した表は「/sgstable 一覧」で確認、「/sgstable クリア」で削除できます。
+
 
 
 #### キャラクターシート倉庫との連携
@@ -107,9 +111,9 @@ BCDiceが振れるWebAPI。[MITライセンス](https://github.com/ysakasin/bcdi
 
 
 ### 使用しているライブラリ
-[javacord](https://github.com/Javacord/Javacord)
+[JDA](https://github.com/discord-jda/JDA)
 
-Discordとの通信で使用。[Apache License 2.0](https://github.com/Javacord/Javacord/blob/master/LICENSE)でライセンスされています。
+Discordとの通信で使用。[Apache License 2.0](https://github.com/discord-jda/JDA/blob/master/LICENSE)でライセンスされています。
 
 
 [OkHttp](https://square.github.io/okhttp/)

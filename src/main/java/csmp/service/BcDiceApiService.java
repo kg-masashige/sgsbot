@@ -69,6 +69,80 @@ public class BcDiceApiService extends BaseService {
 	}
 
 	/**
+	 * サーバ単位のオリジナル表を1件登録する. 同じコマンドの表は上書きする.
+	 * @param guildId サーバID
+	 * @param command 反応させるコマンド
+	 * @param dice 振るダイス
+	 * @param title 表の名前
+	 * @param resultMap 出目 → 文章
+	 */
+	public synchronized void putTable(long guildId, String command, String dice, String title,
+			Map<String, String> resultMap) {
+		Map<String, Map<String, Object>> tableInfo = guildTableInfo.computeIfAbsent(guildId,
+				key -> new ConcurrentHashMap<>());
+		Map<String, Object> detailMap = new ConcurrentHashMap<>();
+		detailMap.put("dice", dice);
+		detailMap.put("title", title);
+		detailMap.put("result", new ConcurrentHashMap<>(resultMap));
+		tableInfo.put(command, detailMap);
+	}
+
+	/**
+	 * サーバ単位のオリジナル表を振る.
+	 * @param guildId サーバID
+	 * @param command 登録したコマンド
+	 * @return 結果の文章. 該当する表が登録されていない場合はnull.
+	 */
+	@SuppressWarnings("unchecked")
+	public String rollTable(long guildId, String command) {
+		Map<String, Map<String, Object>> tableInfo = getTableInfo(guildId);
+		if (tableInfo == null) {
+			return null;
+		}
+		Map<String, Object> tableDetail = tableInfo.get(command);
+		if (tableDetail == null) {
+			return null;
+		}
+		String dice = (String)tableDetail.get("dice");
+		String title = (String)tableDetail.get("title");
+		Map<String, String> resultMap = (Map<String, String>)tableDetail.get("result");
+
+		String rollResult = rollDice(dice, guildId);
+		if (rollResult == null) {
+			String system = getGuildSystem(guildId);
+			return "ダイスロールが失敗しました。システム：" + system + " コマンド：" + dice;
+		}
+		String[] rollResultArray = rollResult.split(" ", -1);
+		String value = rollResultArray[rollResultArray.length - 1];
+		String explain = resultMap.get(value);
+		if (explain == null) {
+			explain = "";
+		}
+		return title + "(" + value + ") → " + explain.replaceAll("\\\\n", "\n");
+	}
+
+	/**
+	 * システムのIDまたは表示名から、システムIDを取得する.
+	 * @param name システムのIDまたは表示名
+	 * @return システムID. 見つからない場合はnull.
+	 */
+	public String resolveSystemId(String name) {
+		Map<String, String> systemNames = getSystemNames();
+		if (systemNames == null || name == null) {
+			return null;
+		}
+		if (systemNames.containsKey(name)) {
+			return name;
+		}
+		for (Map.Entry<String, String> entry : systemNames.entrySet()) {
+			if (name.equals(entry.getValue())) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * サーバ単位のシステム名を取得する.
 	 * @return システム名
 	 */

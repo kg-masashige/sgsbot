@@ -1,77 +1,60 @@
 package csmp.bot.command.sgs;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
 
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.permission.Role;
-import org.javacord.api.entity.server.Server;
-import org.javacord.api.interaction.SlashCommandBuilder;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 /**
  * シナリオ情報クリアコマンド.
  * @author kgmas
  *
  */
-public class ScenarioClearCommand implements IDiscordCommand,IDiscordSlashCommand {
+public class ScenarioClearCommand implements ISlashCommand {
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
-		}
-		if (dmd.getText().equals("/sgsclear")) {
-			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
-	}
-
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		Server guild = dmd.getGuild();
-		Map<Object, Object> secretMap = CsmpService.getInstance().getGuildScenarioInfo().remove(guild.getId());
+	public void execute(SlashCommandInteractionEvent event) {
+		Guild guild = event.getGuild();
+		Map<Object, Object> secretMap = CsmpService.getInstance().getGuildScenarioInfo().remove(guild.getIdLong());
 		if (secretMap == null) {
-			dmd.getChannel().sendMessage("シナリオ情報が設定されていません。");
+			event.reply("シナリオ情報が設定されていません。").queue();
 			return;
 		}
-		List<Map<String, Object>> pcList = (List<Map<String, Object>>)secretMap.get("pc");
-		List<ServerTextChannel> channelList = dmd.getGuild().getTextChannels();
-		List<Role> roleList = guild.getRoles();
-		for (ServerTextChannel channel : channelList) {
-			for (Map<String, Object> pcInfo : pcList) {
-				String roleName = "PC" + CsmpService.text(pcInfo, "name");
-				if (roleName.toLowerCase().equals(channel.getName().toLowerCase())) {
-					channel.delete().get();
-				}
-			}
+		event.reply("シナリオ情報をクリアします。").queue();
+
+		Set<String> pcNames = new HashSet<>();
+		for (Map<String, Object> pcInfo : (List<Map<String, Object>>)secretMap.get("pc")) {
+			pcNames.add("PC" + CsmpService.text(pcInfo, "name"));
 		}
-		for (Role role : roleList) {
-			for (Map<String, Object> pcInfo : pcList) {
-				String roleName = "PC" + CsmpService.text(pcInfo, "name");
-				if (roleName.equals(role.getName())) {
-					role.delete();
+
+		for (TextChannel channel : guild.getTextChannels()) {
+			for (String pcName : pcNames) {
+				if (pcName.equalsIgnoreCase(channel.getName())) {
+					channel.delete().complete();
 					break;
 				}
 			}
 		}
-		dmd.getChannel().sendMessage("役職とチャンネルを削除しました。");
 
+		for (Role role : guild.getRoles()) {
+			if (pcNames.contains(role.getName())) {
+				role.delete().complete();
+			}
+		}
 
-	}
-	@Override
-	public void warning(DiscordMessageData dmd) {
+		event.getHook().sendMessage("役職とチャンネルを削除しました。").queue();
 	}
 
 	@Override
@@ -82,23 +65,14 @@ public class ScenarioClearCommand implements IDiscordCommand,IDiscordSlashComman
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("シナリオシートの情報、チャンネル、権限を削除します。")
-				;
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(), "シナリオシートの情報、チャンネル、権限を削除します。")
+				.setContexts(InteractionContextType.GUILD);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "sgsclear";
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		dmd.getInteraction().createImmediateResponder().setContent("シナリオ情報をクリアします。").respond();
-
-		dmd.setText("/sgsclear");
-		execute(dmd);
 	}
 
 }

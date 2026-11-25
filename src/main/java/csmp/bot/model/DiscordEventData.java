@@ -1,64 +1,32 @@
 package csmp.bot.model;
 
-import java.util.Map;
+import net.dv8tion.jda.api.entities.Guild;
 
-import org.javacord.api.entity.server.Server;
-import org.javacord.api.event.server.ServerEvent;
-
+/**
+ * サーバーで発生したイベントの情報.
+ */
 public class DiscordEventData {
 
-	public DiscordEventData(ServerEvent event, boolean addFlag) {
-		this.guild = event.getServer();
-		this.event = event;
+	public DiscordEventData(Guild guild, boolean addFlag) {
+		this.guild = guild;
 		this.addFlag = addFlag;
 	}
 
 	/**
 	 * 追加フラグ
 	 */
-	private boolean addFlag = false;
+	private final boolean addFlag;
 
 	/**
 	 * ギルド.
 	 */
-	private Server guild = null;
-
-	/**
-	 * 発生イベント
-	 */
-	private ServerEvent event = null;
-
-	/**
-	 * 取得データ
-	 */
-	private Map<String, Object> data = null;
+	private final Guild guild;
 
 	/**
 	 * @return guild
 	 */
-	public Server getGuild() {
+	public Guild getGuild() {
 		return guild;
-	}
-
-	/**
-	 * @return event
-	 */
-	public ServerEvent getEvent() {
-		return event;
-	}
-
-	/**
-	 * @return data
-	 */
-	public Map<String, Object> getData() {
-		return data;
-	}
-
-	/**
-	 * @param data セットする data
-	 */
-	public void setData(Map<String, Object> data) {
-		this.data = data;
 	}
 
 	/**

@@ -1,67 +1,45 @@
 package csmp.bot.command.character;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandInteraction;
-import org.javacord.api.interaction.SlashCommandInteractionOption;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionType;
-
-import csmp.bot.command.IDiscordCommand;
-import csmp.bot.command.IDiscordSlashCommand;
+import csmp.bot.command.ISlashCommand;
 import csmp.bot.model.CommandHelpData;
-import csmp.bot.model.DiscordMessageData;
 import csmp.service.CsmpService;
 import csmp.utl.DiscordUtil;
+import net.dv8tion.jda.api.entities.channel.attribute.IWebhookContainer;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
-public class LinkCharacterSheetCommand implements IDiscordCommand,IDiscordSlashCommand {
+/**
+ * キャラクターシートとチャンネルを紐付けるコマンド.
+ */
+public class LinkCharacterSheetCommand implements ISlashCommand {
+
+	private static final String OPTION_URL = "キャラクターシートurl";
 
 	@Override
-	public boolean judgeExecute(DiscordMessageData dmd) {
-		if (dmd.getGuild() == null) {
-			return false;
+	public void execute(SlashCommandInteractionEvent event) {
+		String sheetUrl = event.getOption(OPTION_URL).getAsString().trim();
+		if (!(event.getChannel() instanceof IWebhookContainer channel)) {
+			event.reply("このチャンネルでは実行できません。テキストチャンネルで実行してください。").setEphemeral(true).queue();
+			return;
 		}
 
-		if (dmd.getText().startsWith("/link http")) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean checkInput(DiscordMessageData dmd) {
-		return true;
-	}
-
-
-	@Override
-	public void execute(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		String sheetUrl = dmd.getCommandArray()[1];
-
-		String webhookUrl = DiscordUtil.getWebhookUrl(dmd);
-
+		event.deferReply(true).queue();
+		String webhookUrl = DiscordUtil.getWebhookUrl(event.getHook(), channel);
 		if (webhookUrl == null) {
-			DiscordUtil.sendMessage("Webhookの作成に失敗しました。", dmd, false);
 			return;
 		}
 
 		Map<String, Object> result = CsmpService.getInstance().registerCharacterSheet(webhookUrl, sheetUrl);
 		if (result != null && "ok".equals(result.get("result"))) {
-			DiscordUtil.sendMessage("キャラクターシートを登録しました。キャラクターシートでDRボタンを押してください。", dmd);
-
+			DiscordUtil.sendMessage(event.getHook(), "キャラクターシートを登録しました。キャラクターシートでDRボタンを押してください。");
 		} else {
-			DiscordUtil.sendMessage("キャラクターシートの登録に失敗しました。再度コマンドを実行してください。", dmd);
-
+			DiscordUtil.sendMessage(event.getHook(), "キャラクターシートの登録に失敗しました。再度コマンドを実行してください。");
 		}
-
-	}
-
-	@Override
-	public void warning(DiscordMessageData dmd) {
 	}
 
 	@Override
@@ -72,34 +50,17 @@ public class LinkCharacterSheetCommand implements IDiscordCommand,IDiscordSlashC
 	}
 
 	@Override
-	public SlashCommandBuilder entryCommand() {
-		SlashCommandOption link = SlashCommandOption.create(
-				SlashCommandOptionType.STRING, "キャラクターシートurl",
-				"キャラクターシート倉庫に登録しているキャラクターシートのURLを指定してください。", true);
-
-		return new SlashCommandBuilder().setName(getCommandName())
-				.setDescription("キャラクターシート上のDRボタンを押した時に結果をこのチャンネルに反映させることができます。")
-				.addOption(link)
-				;
+	public SlashCommandData createCommandData() {
+		return Commands.slash(getCommandName(),
+				"キャラクターシート上のDRボタンを押した時に結果をこのチャンネルに反映させることができます。")
+				.setContexts(InteractionContextType.GUILD)
+				.addOption(OptionType.STRING, OPTION_URL,
+						"キャラクターシート倉庫に登録しているキャラクターシートのURLを指定してください。", true);
 	}
 
 	@Override
 	public String getCommandName() {
 		return "link";
-	}
-
-	@Override
-	public void executeSlashCommand(DiscordMessageData dmd) throws InterruptedException, ExecutionException {
-		SlashCommandInteraction interaction = dmd.getInteraction();
-		List<SlashCommandInteractionOption> options = interaction.getOptions();
-
-		String commandText = "/link " + options.get(0).getStringValue().orElse("");
-
-		dmd.setText(commandText);
-
-		execute(dmd);
-
-
 	}
 
 }
